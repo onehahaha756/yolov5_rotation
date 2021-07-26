@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-import cv2,glob,os,gdal,pickle
+import cv2,glob,os,pickle
 import torch
 import torch.backends.cudnn as cudnn
 

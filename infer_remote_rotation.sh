@@ -1,11 +1,11 @@
-CUDA_VISIBLE_DEVICES=3 python3 detect_rotation.py \
---weights runs/train/exp292/weights/last.pt  \
+CUDA_VISIBLE_DEVICES=1 python3 detect_rotation.py \
+--weights runs/train/exp/weights/best.pt  \
 --conf 0.01 \
 --iou 0.05 \
---imgsz 640 \
---overlap 300 \
+--imgsz 4096 \
+--overlap 0 \
 --remote \
---source /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation/images/val \
+--source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
 --annot_dir /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation/labels/val
 
 #--nosave \

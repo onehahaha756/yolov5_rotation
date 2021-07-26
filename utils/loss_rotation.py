@@ -97,7 +97,8 @@ class ComputeLoss:
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
         smooth_theta=nn.SmoothL1Loss()
-        self.smooth_theta=smooth_theta
+        BCEtheta=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))
+        self.theta_lossfn=BCEtheta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
 
@@ -136,7 +137,7 @@ class ComputeLoss:
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
                 # import pdb;pdb.set_trace()
-                ltheta+=self.smooth_theta(p_theta,tbox[i][:,4])
+                ltheta+=self.theta_lossfn(p_theta,tbox[i][:,4])
                 # Objectness
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 

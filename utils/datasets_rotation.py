@@ -471,7 +471,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         with Pool(num_threads) as pool:
             pbar = tqdm(pool.imap_unordered(verify_image_label_rotation, zip(self.img_files, self.label_files, repeat(prefix))),
                         desc=desc, total=len(self.img_files))
-            import pdb;pdb.set_trace()
+            # import pdb;pdb.set_trace()
             for im_file, l, shape, segments, nm_f, nf_f, ne_f, nc_f in pbar:
                 nm += nm_f
                 nf += nf_f
