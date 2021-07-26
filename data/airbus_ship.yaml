@@ -1,0 +1,23 @@
+# PASCAL VOC dataset http://host.robots.ox.ac.uk/pascal/VOC/
+# Train command: python train.py --data voc.yaml
+# Default dataset location is next to YOLOv5:
+#   /parent_folder
+#     /VOC
+#     /yolov5
+
+
+# download command/URL (optional)
+# download: bash data/scripts/get_voc.sh
+
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+
+# train: ../cutyoloship/images/train/  # 
+# val: ../cutyoloship/images/val/  # 
+
+train: /data/03_Datasets/airbus-ship-detection/airbus_ship_detection_yolo640/images/train/  # 
+val: /data/03_Datasets/airbus-ship-detection/airbus_ship_detection_yolo640/images/val/  # 
+# number of classes
+nc: 1
+
+# class names
+names: [ 'ship' ]

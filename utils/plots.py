@@ -16,7 +16,7 @@ import torch
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-from utils.general import xywh2xyxy, xyxy2xywh
+from utils.general import xywh2xyxy, xyxy2xywh,xywhtheta2polygons
 from utils.metrics import fitness
 
 # Settings
@@ -123,6 +123,90 @@ def output_to_target(output):
             targets.append([i, cls, *list(*xyxy2xywh(np.array(box)[None])), conf])
     return np.array(targets)
 
+def plot_images_rotation(images, targets, paths=None, fname='images.jpg', names=None, max_size=640, max_subplots=16):
+    # Plot image grid with labels
+
+    if isinstance(images, torch.Tensor):
+        images = images.cpu().float().numpy()
+    if isinstance(targets, torch.Tensor):
+        targets = targets.cpu().numpy()
+
+    # un-normalise
+    if np.max(images[0]) <= 1:
+        images *= 255
+    # import pdb;pdb.set_trace()
+    tl = 3  # line thickness
+    tf = max(tl - 1, 1)  # font thickness
+    bs, _, h, w = images.shape  # batch size, _, height, width
+    bs = min(bs, max_subplots)  # limit plot images
+    ns = np.ceil(bs ** 0.5)  # number of subplots (square)
+
+    # Check if we should resize
+    scale_factor = max_size / max(h, w)
+    if scale_factor < 1:
+        h = math.ceil(scale_factor * h)
+        w = math.ceil(scale_factor * w)
+
+    mosaic = np.full((int(ns * h), int(ns * w), 3), 255, dtype=np.uint8)  # init
+    for i, img in enumerate(images):
+        if i == max_subplots:  # if last batch has fewer images than we expect
+            break
+
+        block_x = int(w * (i // ns))
+        block_y = int(h * (i % ns))
+
+        img = img.transpose(1, 2, 0)
+        if scale_factor < 1:
+            img = cv2.resize(img, (w, h))
+
+        mosaic[block_y:block_y + h, block_x:block_x + w, :] = img
+        # import pdb;pdb.set_trace()
+        if len(targets) > 0:
+            image_targets = targets[targets[:, 0] == i]
+            boxes=image_targets[:,2:].copy()
+            # import pdb;pdb.set_trace()
+            boxes[:,[0,2]]*=w
+            boxes[:,[1,3]]*=h
+            boxes[:,4]*=90
+            boxes = xywhtheta2polygons(boxes).T
+            classes = image_targets[:, 1].astype('int')
+            labels = image_targets.shape[1] == 7  # labels if no conf column
+            conf = None if labels else image_targets[:, 6]  # check for confidence presence (label vs pred)
+            # import pdb;pdb.set_trace()
+            if boxes.shape[1]:
+                if boxes.max() <= 1.01:  # if normalized with tolerance 0.01
+                    boxes[[0, 2]] *= w  # scale to pixels
+                    boxes[[1, 3]] *= h
+                elif scale_factor < 1:  # absolute coords need scale if image scales
+                    boxes *= scale_factor
+            boxes[[0, 2,4,6]] += block_x
+            boxes[[1, 3,5,7]] += block_y
+            for j, box in enumerate(boxes.T):
+                cls = int(classes[j])
+                color = colors(cls)
+                cls = names[cls] if names else cls
+                if labels or conf[j] > 0.25:  # 0.25 conf thresh
+                    label = '%s' % cls if labels else '%s %.1f' % (cls, conf[j])
+                    box=box.reshape((-1,1,2)).astype(np.int32)
+                    cv2.polylines(mosaic,[box],True,color,3)
+                    #plot_one_box(box, mosaic, label=label, color=color, line_thickness=tl)
+
+        # Draw image filename labels
+        if paths:
+            label = Path(paths[i]).name[:40]  # trim to 40 char
+            t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
+            cv2.putText(mosaic, label, (block_x + 5, block_y + t_size[1] + 5), 0, tl / 3, [220, 220, 220], thickness=tf,
+                        lineType=cv2.LINE_AA)
+
+        # Image border
+        cv2.rectangle(mosaic, (block_x, block_y), (block_x + w, block_y + h), (255, 255, 255), thickness=3)
+
+    if fname:
+        r = min(1280. / max(h, w) / ns, 1.0)  # ratio to limit image size
+        mosaic = cv2.resize(mosaic, (int(ns * w * r), int(ns * h * r)), interpolation=cv2.INTER_AREA)
+        # cv2.imwrite(fname, cv2.cvtColor(mosaic, cv2.COLOR_BGR2RGB))  # cv2 save
+        Image.fromarray(mosaic).save(fname)  # PIL save
+    return mosaic
 
 def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max_size=640, max_subplots=16):
     # Plot image grid with labels
@@ -161,6 +245,7 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
             img = cv2.resize(img, (w, h))
 
         mosaic[block_y:block_y + h, block_x:block_x + w, :] = img
+        import pdb;pdb.set_trace()
         if len(targets) > 0:
             image_targets = targets[targets[:, 0] == i]
             boxes = xywh2xyxy(image_targets[:, 2:6]).T
@@ -283,12 +368,12 @@ def plot_study_txt(path='', x=None):  # from utils.plots import *; plot_study_tx
     plt.savefig(str(Path(path).name) + '.png', dpi=300)
 
 
-def plot_labels(labels, names=(), save_dir=Path(''), loggers=None):
+def plot_rotation_labels(labels, names=(), save_dir=Path(''), loggers=None):
     # plot dataset labels
     print('Plotting labels... ')
     c, b = labels[:, 0], labels[:, 1:].transpose()  # classes, boxes
     nc = int(c.max() + 1)  # number of classes
-    x = pd.DataFrame(b.transpose(), columns=['x', 'y', 'width', 'height'])
+    x = pd.DataFrame(b.transpose(), columns=['x', 'y', 'width', 'height','theta'])
 
     # seaborn correlogram
     sn.pairplot(x, corner=True, diag_kind='auto', kind='hist', diag_kws=dict(bins=50), plot_kws=dict(pmax=0.9))
@@ -308,10 +393,58 @@ def plot_labels(labels, names=(), save_dir=Path(''), loggers=None):
         ax[0].set_xlabel('classes')
     sn.histplot(x, x='x', y='y', ax=ax[2], bins=50, pmax=0.9)
     sn.histplot(x, x='width', y='height', ax=ax[3], bins=50, pmax=0.9)
-
+    # import pdb;pdb.set_trace()
     # rectangles
     labels[:, 1:3] = 0.5  # center
-    labels[:, 1:] = xywh2xyxy(labels[:, 1:]) * 2000
+    labels[:, 1:-1] = xywh2xyxy(labels[:, 1:-1]) * 2000
+    img = Image.fromarray(np.ones((2000, 2000, 3), dtype=np.uint8) * 255)
+    for cls, *box in labels[:1000]:
+        ImageDraw.Draw(img).rectangle(box, width=1, outline=colors(cls))  # plot
+    ax[1].imshow(img)
+    ax[1].axis('off')
+
+    for a in [0, 1, 2, 3]:
+        for s in ['top', 'right', 'left', 'bottom']:
+            ax[a].spines[s].set_visible(False)
+
+    plt.savefig(save_dir / 'labels.jpg', dpi=200)
+    matplotlib.use('Agg')
+    plt.close()
+
+    # loggers
+    for k, v in loggers.items() or {}:
+        if k == 'wandb' and v:
+            v.log({"Labels": [v.Image(str(x), caption=x.name) for x in save_dir.glob('*labels*.jpg')]}, commit=False)
+
+def plot_labels(labels, names=(), save_dir=Path(''), loggers=None):
+    # plot dataset labels
+    print('Plotting labels... ')
+    c, b = labels[:, 0], labels[:, 1:].transpose()  # classes, boxes
+    nc = int(c.max() + 1)  # number of classes
+    x = pd.DataFrame(b.transpose(), columns=['x', 'y', 'width', 'height','theta'])
+
+    # seaborn correlogram
+    sn.pairplot(x, corner=True, diag_kind='auto', kind='hist', diag_kws=dict(bins=50), plot_kws=dict(pmax=0.9))
+    plt.savefig(save_dir / 'labels_correlogram.jpg', dpi=200)
+    plt.close()
+
+    # matplotlib labels
+    matplotlib.use('svg')  # faster
+    ax = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)[1].ravel()
+    y = ax[0].hist(c, bins=np.linspace(0, nc, nc + 1) - 0.5, rwidth=0.8)
+    # [y[2].patches[i].set_color([x / 255 for x in colors(i)]) for i in range(nc)]  # update colors bug #3195 
+    ax[0].set_ylabel('instances')
+    if 0 < len(names) < 30:
+        ax[0].set_xticks(range(len(names)))
+        ax[0].set_xticklabels(names, rotation=90, fontsize=10)
+    else:
+        ax[0].set_xlabel('classes')
+    sn.histplot(x, x='x', y='y', ax=ax[2], bins=50, pmax=0.9)
+    sn.histplot(x, x='width', y='height', ax=ax[3], bins=50, pmax=0.9)
+    # import pdb;pdb.set_trace()
+    # rectangles
+    labels[:, 1:3] = 0.5  # center
+    labels[:, 1:-1] = xywh2xyxy(labels[:, 1:-1]) * 2000
     img = Image.fromarray(np.ones((2000, 2000, 3), dtype=np.uint8) * 255)
     for cls, *box in labels[:1000]:
         ImageDraw.Draw(img).rectangle(box, width=1, outline=colors(cls))  # plot
