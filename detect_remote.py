@@ -130,7 +130,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
                 pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-                # import pdb;pdb.set_trace()
+                import pdb;pdb.set_trace()
                 if len(pred)>0:
                     ori_pred=crop_xyxy2ori_xyxy(pred[0],x_shift,y_shift)
                     ori_preds+=ori_pred

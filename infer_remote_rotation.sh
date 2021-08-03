@@ -1,6 +1,6 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_rotation.py \
---weights runs/train/exp/weights/best.pt  \
---conf 0.01 \
+--weights runs/train/exp320/weights/best.pt  \
+--conf 0.5 \
 --iou 0.05 \
 --imgsz 4096 \
 --overlap 0 \

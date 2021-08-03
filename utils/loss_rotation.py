@@ -98,7 +98,7 @@ class ComputeLoss:
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
         smooth_theta=nn.SmoothL1Loss()
         BCEtheta=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))
-        self.theta_lossfn=BCEtheta
+        self.theta_lossfn=smooth_theta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
 
@@ -132,8 +132,9 @@ class ComputeLoss:
                 # Regression
                 pxy = ps[:, :2].sigmoid() * 2. - 0.5
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
-                p_theta=(ps[:,4])
+                p_theta=ps[:,4].sigmoid()
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
+                # import pdb;pdb.set_trace()
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
                 # import pdb;pdb.set_trace()
@@ -165,7 +166,7 @@ class ComputeLoss:
         bs = tobj.shape[0]  # batch size
 
         loss = lbox + lobj + lcls+ltheta
-        return loss * bs, torch.cat((lbox, lobj, ltheta, loss)).detach()
+        return loss * bs, torch.cat((lbox, lobj,lcls, ltheta, loss)).detach()
 
     def build_targets(self, p, targets):
         # import pdb;pdb.set_trace()
@@ -182,7 +183,7 @@ class ComputeLoss:
                             [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m
                             # [1, 1], [1, -1], [-1, 1], [-1, -1],  # jk,jm,lk,lm
                             ], device=targets.device).float() * g  # offsets
-
+        # import pdb;pdb.set_trace()
         for i in range(self.nl):
             anchors = self.anchors[i]
             gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain

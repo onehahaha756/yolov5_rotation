@@ -23,12 +23,17 @@ import pkg_resources as pkg
 import torch
 import torchvision
 import yaml
+try:
+    from utils.google_utils import gsutil_getsize
+    from utils.metrics import fitness
+    from utils.torch_utils import init_torch_seeds
+    from utils.rotation_nms import rotation_nms
+except:
+    from google_utils import gsutil_getsize
+    from metrics import fitness
+    from torch_utils import init_torch_seeds
 
 from detectron2.layers import nms_rotated
-from utils.google_utils import gsutil_getsize
-from utils.metrics import fitness
-from utils.torch_utils import init_torch_seeds
-from utils.rotation_nms import rotation_nms
 
 # Settings
 torch.set_printoptions(linewidth=320, precision=5, profile='long')

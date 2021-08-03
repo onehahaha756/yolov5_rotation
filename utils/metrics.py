@@ -6,10 +6,10 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
-from . import general
-
-
+try:
+    from . import general
+except:    
+    import general
 def fitness(x):
     # Model fitness as a weighted combination of metrics
     w = [0.0, 0.0, 0.1, 0.9]  # weights for [P, R, mAP@0.5, mAP@0.5:0.95]
@@ -41,6 +41,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     # Create Precision-Recall curve and compute AP for each class
     px, py = np.linspace(0, 1, 1000), []  # for plotting
     ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
+    # plot=True
     for ci, c in enumerate(unique_classes):
         i = pred_cls == c
         n_l = (target_cls == c).sum()  # number of labels
@@ -70,7 +71,9 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
 
     # Compute F1 (harmonic mean of precision and recall)
     f1 = 2 * p * r / (p + r + 1e-16)
+    # plot=True
     if plot:
+        # import pdb;pdb.set_trace()
         plot_pr_curve(px, py, ap, Path(save_dir) / 'PR_curve.png', names)
         plot_mc_curve(px, f1, Path(save_dir) / 'F1_curve.png', names, ylabel='F1')
         plot_mc_curve(px, p, Path(save_dir) / 'P_curve.png', names, ylabel='Precision')

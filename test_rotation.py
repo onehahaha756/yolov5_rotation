@@ -83,7 +83,7 @@ def test(data,
     check_dataset(data)  # check
     is_coco = data['val'].endswith('coco/val2017.txt')  # COCO dataset
     nc = 1 if single_cls else int(data['nc'])  # number of classes
-    iouv = torch.linspace(0.25, 0.95, 20).to(device)  # iou vector for mAP@0.5:0.95
+    iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
     # Logging
@@ -109,11 +109,6 @@ def test(data,
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
 
 
-    tp=np.array([])
-    confidence=np.array([])
-    groudtruth=np.array([])
-    pred_cls=np.array([])
-    target_cls=np.array([])
     for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
         t_ = time_synchronized()
         img = img.to(device, non_blocking=True)
@@ -249,7 +244,7 @@ def test(data,
 
     # Print results
     pf = '%20s' + '%11i' * 2 + '%11.3g' * 4  # print format
-    print(pf % ('all', seen, nt, mp, mr, map50, map))
+    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
 
     # Print results per class
     if (verbose or (nc < 50 and not training)) and nc > 1 and len(stats):

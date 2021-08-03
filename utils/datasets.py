@@ -22,10 +22,14 @@ import yaml
 from PIL import Image, ExifTags
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
-from utils.general import check_requirements, check_file, check_dataset, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, \
+try:
+    from utils.general import check_requirements, check_file, check_dataset, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, \
+        segment2box, segments2boxes, resample_segments, clean_str
+    from utils.torch_utils import torch_distributed_zero_first
+except:
+    from general import check_requirements, check_file, check_dataset, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, \
     segment2box, segments2boxes, resample_segments, clean_str
-from utils.torch_utils import torch_distributed_zero_first
+    from torch_utils import torch_distributed_zero_first   
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
@@ -410,7 +414,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         cache.pop('hash')  # remove hash
         cache.pop('version')  # remove version
         labels, shapes, self.segments = zip(*cache.values())
-        # import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
         self.labels = list(labels)
         self.shapes = np.array(shapes, dtype=np.float64)
         self.img_files = list(cache.keys())  # update

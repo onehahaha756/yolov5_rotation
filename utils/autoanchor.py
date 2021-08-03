@@ -4,14 +4,16 @@ import numpy as np
 import torch
 import yaml
 from tqdm import tqdm
-
-from utils.general import colorstr
+try:
+    from utils.general import colorstr
+except:
+    from general import colorstr
 
 
 def check_anchor_order(m):
     # Check anchor order against stride order for YOLOv5 Detect() module m, and correct if necessary
     a = m.anchor_grid.prod(-1).view(-1)  # anchor area
-    da = a[-1] - a[0]  # delta a
+    da = a[-1] - a[0]  # delta a 
     ds = m.stride[-1] - m.stride[0]  # delta s
     if da.sign() != ds.sign():  # same order
         print('Reversing anchor order')
@@ -104,8 +106,11 @@ def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=10
     if isinstance(path, str):  # *.yaml file
         with open(path) as f:
             data_dict = yaml.safe_load(f)  # model dict
-        from utils.datasets import LoadImagesAndLabels
-        dataset = LoadImagesAndLabels(data_dict['train'], augment=True, rect=True)
+        try:
+            from utils.datasets_rotation import LoadImagesAndLabels
+        except:
+            from datasets_rotation import LoadImagesAndLabels
+        dataset = LoadImagesAndLabels(data_dict['train'], augment=False, rect=True)
     else:
         dataset = path  # dataset
 
@@ -123,6 +128,7 @@ def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=10
     # Kmeans calculation
     print(f'{prefix}Running kmeans for {n} anchors on {len(wh)} points...')
     s = wh.std(0)  # sigmas for whitening
+    import pdb;pdb.set_trace()
     k, dist = kmeans(wh / s, n, iter=30)  # points, mean distance
     assert len(k) == n, print(f'{prefix}ERROR: scipy.cluster.vq.kmeans requested {n} points but returned only {len(k)}')
     k *= s
@@ -159,3 +165,9 @@ def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=10
                 print_results(k)
 
     return print_results(k)
+if __name__=='__main__':
+    import os
+    data_path='../data/tzplane.yaml'
+    # data_path='../data/seaship_rotation.yaml'
+    print(os.listdir('../'))
+    kmean_anchors(data_path)

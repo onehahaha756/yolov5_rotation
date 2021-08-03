@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_remote.py \
---weights runs/train/exp48/weights/last.pt  \
+--weights runs/train/exp200/weights/last.pt  \
 --conf 0.7 \
 --iou 0.05 \
 --imgsz 640 \

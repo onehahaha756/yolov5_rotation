@@ -1,7 +1,7 @@
 import argparse
 import logging
 import math
-import os
+import os,shutil
 import random
 import time
 import warnings
@@ -40,11 +40,11 @@ logger = logging.getLogger(__name__)
 #--------------bug---------------#
 
 # import torch
-torch.backends.cudnn.enabled = False
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.allow_tf32 = True
+# torch.backends.cudnn.enabled = False
+# torch.backends.cuda.matmul.allow_tf32 = True
+# torch.backends.cudnn.benchmark = True
+# torch.backends.cudnn.deterministic = False
+# torch.backends.cudnn.allow_tf32 = True
 #--------------------------------#
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 # import pdb;pdb.set_trace()
@@ -60,7 +60,7 @@ def train(hyp, opt, device, tb_writer=None):
     last = wdir / 'last.pt'
     best = wdir / 'best.pt'
     results_file = save_dir / 'results.txt'
-
+    shutil.copy(opt.data,save_dir)
     # Save run settings
     with open(save_dir / 'hyp.yaml', 'w') as f:
         yaml.safe_dump(hyp, f, sort_keys=False)
@@ -200,7 +200,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Trainloader
     dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, single_cls,
-                                            hyp=hyp, augment=True, cache=opt.cache_images, rect=opt.rect, rank=rank,
+                                            hyp=hyp, augment=False, cache=opt.cache_images, rect=opt.rect, rank=rank,
                                             rotation=opt.rotation,world_size=opt.world_size, workers=opt.workers,
                                             image_weights=opt.image_weights, quad=opt.quad, prefix=colorstr('train: '))
     mlc = np.concatenate(dataset.labels, 0)[:, 0].max()  # max label class
@@ -280,11 +280,11 @@ def train(hyp, opt, device, tb_writer=None):
         # b = int(random.uniform(0.25 * imgsz, 0.75 * imgsz + gs) // gs * gs)
         # dataset.mosaic_border = [b - imgsz, -b]  # height, width borders
 
-        mloss = torch.zeros(4, device=device)  # mean losses
+        mloss = torch.zeros(5, device=device)  # mean losses
         if rank != -1:
             dataloader.sampler.set_epoch(epoch)
         pbar = enumerate(dataloader)
-        logger.info(('\n' + '%10s' * 8) % ('Epoch', 'gpu_mem', 'box', 'obj', 'theta', 'total', 'labels', 'img_size'))
+        logger.info(('\n' + '%10s' * 9) % ('Epoch', 'gpu_mem', 'box', 'obj','cls', 'theta', 'total', 'labels', 'img_size'))
         if rank in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
@@ -336,7 +336,7 @@ def train(hyp, opt, device, tb_writer=None):
             if rank in [-1, 0]:
                 mloss = (mloss * i + loss_items) / (i + 1)  # update mean losses
                 mem = '%.3gG' % (torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0)  # (GB)
-                s = ('%10s' * 2 + '%10.4g' * 6) % (
+                s = ('%10s' * 2 + '%10.4g' * 7) % (
                     f'{epoch}/{epochs - 1}', mem, *mloss, targets.shape[0], imgs.shape[-1])
                 pbar.set_description(s)
 
@@ -387,9 +387,9 @@ def train(hyp, opt, device, tb_writer=None):
 
             # import pdb;pdb.set_trace()
             # Log
-            tags = ['train/box_loss', 'train/obj_loss', 'train/theta_loss',  # train loss
+            tags = ['train/box_loss', 'train/obj_loss', 'train/cls_loss', 'train/theta_loss', # train loss
                     'metrics/precision', 'metrics/recall', 'metrics/mAP_0.5', 'metrics/mAP_0.5:0.95',
-                    'val/box_loss', 'val/obj_loss', 'val/theta_loss',  # val loss
+                    'val/box_loss', 'val/obj_loss', 'val/cls_loss','val/theta_loss',  # val loss
                     'x/lr0', 'x/lr1', 'x/lr2']  # params
             for x, tag in zip(list(mloss[:-1]) + list(results) + lr, tags):
                 if tb_writer:

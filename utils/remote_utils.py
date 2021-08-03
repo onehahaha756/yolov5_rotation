@@ -29,7 +29,9 @@ def draw_clsdet_rotation(img,cls_dets,vis_thresh=0.001):
         # import pdb;pdb.set_trace()
         bbox=cv2.boxPoints(rect).reshape((-1,1,2)).astype(np.int32)
         if score>vis_thresh:
-            cv2.polylines(img2,[bbox],True,(0,255,0))
+            cv2.polylines(img2,[bbox],True,(0,255,0),3)
+            put_text='pos: {:.1f} {:.1f} {:.1f} {:.1f} {:.2f}\n conf : {:.3f}'.format(x,y,w,h,theta,score)
+            cv2.putText(img2,put_text,(50,50),3,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)
     return img2
 
 def draw_clsdet(img,cls_dets,vis_thresh):
