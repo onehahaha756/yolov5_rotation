@@ -1,4 +1,4 @@
-#Yolov5 rotation modified
+
 ## 基于yolov5的旋转框目标检测
 ### 修改的地方
 1. 数据表示方式
@@ -10,7 +10,7 @@
    https://blog.csdn.net/zzzhaowendao/article/details/117510645
 - 对x,y,w,h,theta进行坐标归一化
    (x/imgsz,y/imgsz,w/imgsz,h/imgsz,theta/90)
-2. Dataloader修改
+2. Dataloader修改（dataloader_rotation.py)
    关闭了数据增广（to do next），调整了dataloader加载的格式。
 3. 模型修改
 - 修改模型Detect模块，增加bbox theta的维度
