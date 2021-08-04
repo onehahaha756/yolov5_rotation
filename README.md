@@ -21,6 +21,19 @@
    detectron2 : https://github.com/facebookresearch/detectron2/tree/66d658de02a2579d9516a72d94e98a394e2f0ccf/detectron2
 5. 评价代码修改
    制作数据集时，将4096图像切成了640尺寸大小，测试时采用自己编写的代码，之前写的是针对矩形框的，需要针对旋转框修改下nms和评价的代码（to do）
+### 从头开始训练及测试流程（代码使用说明)
+1. dota标注数据集格式转yolov5 rotation标注格式
+- 脚本 utils/cut2rotation.sh ，修改数据集路径和滑窗切片大小及重叠面积即可
+2. 数据集路径修改 
+- 修改data文件夹下数据集定义
+3. anchor聚类
+- cd utils，修改数据集路径，然后python autoanchors.py即可
+4. 模型anchor修改
+- 将聚类的anchor更新到模型定义中 models/yolov5s_rotation.yaml
+5. 训练
+- 脚本 dis_train_rotation.sh，修改数据路径运行
+6. 测试及评价
+- 脚本 infer_remote_rotation.sh，修改数据路径及模型权重，会保存测试图像结果，但目前需要进一步修改旋转框的评价代码，评测结果暂不可用
 ### 测试结果
 - 舰船AP       0.674
 - 飞机11类mAP  0.41左右
