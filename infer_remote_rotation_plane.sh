@@ -1,12 +1,13 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_rotation.py \
---weights runs/train/exp341/weights/best.pt  \
---conf 0.3 \
---iou 0.05 \
+--weights runs/train/tzplane6/weights/best.pt  \
+--conf 0.1 \
+--iou 0.5 \
 --imgsz 4096 \
+--device cpu \
 --overlap 0 \
 --remote \
---source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
---annot_dir /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation/labels/val
+--source /data/03_Datasets/CasiaDatasets/Plane/TZ_Plane_Dotaformat/val/images \
+--annot_dir /data/03_Datasets/CasiaDatasets/Plane/TZ_Plane_Dotaformat/val/labelTxt
 
 #--nosave \
 #--source /data/03_Datasets/CasiaDatasets/ShipOrigin/JL101K_PMS03_20200222111429_200022158_101_0013_001_L1/PAN/

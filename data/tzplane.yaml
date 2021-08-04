@@ -14,8 +14,8 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: /data/03_Datasets/CasiaDatasets/Plane/cutyoloplane640_rotation_neg_1_5/images/train/  # 
-val: /data/03_Datasets/CasiaDatasets/Plane/cutyoloplane640_rotation_neg_1_5/images/val/  # 
+train: /data/03_Datasets/CasiaDatasets/Plane/cutyoloplane640_rotation_neg0/images/train/  # 
+val: /data/03_Datasets/CasiaDatasets/Plane/cutyoloplane640_rotation_neg0/images/val/  # 
 # number of classes
 nc: 11
 

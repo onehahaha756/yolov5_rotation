@@ -32,7 +32,7 @@ def test(data,
          device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
          single_cls=False,  # treat as single-class dataset
          augment=False,  # augmented inference
-         verbose=False,  # verbose output
+         verbose=True,  # verbose output
          save_txt=False,  # save results to *.txt
          save_hybrid=False,  # save label+prediction hybrid results to *.txt
          save_conf=False,  # save confidences in --save-txt labels
@@ -249,7 +249,7 @@ def test(data,
     # Print results per class
     if (verbose or (nc < 50 and not training)) and nc > 1 and len(stats):
         for i, c in enumerate(ap_class):
-            print(pf % (names[c], seen, nt, p[i], r[i], ap50[i], ap[i]))
+            print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
 
     # Print speeds
     t = tuple(x / seen * 1E3 for x in (t0, t1, t2))  # speeds per image

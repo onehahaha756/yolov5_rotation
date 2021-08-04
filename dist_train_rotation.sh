@@ -3,8 +3,9 @@ CUDA_VISIBLE_DEVICES=0,1 python3 -m torch.distributed.launch --nproc_per_node 2 
 --img 640 \
 --workers 16 \
 --name tzplane \
+--adam \
 --cfg models/yolov5s_rotation.yaml \
---data data/tzplane.yaml \
+--data data/seaship_rotation.yaml \
 --hyp data/hyp.scratch.yaml \
 --batch-size 84 \
 --epochs 300 

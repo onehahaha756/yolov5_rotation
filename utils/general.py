@@ -682,8 +682,8 @@ def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, cl
 
     # Settings
     min_wh, max_wh = 2, 4096  # (pixels) minimum and maximum box width and height
-    max_nms = 30000  # maximum number of boxes into torchvision.ops.nms()
-    time_limit = 200.0  # seconds to quit after
+    max_nms = 1000  # maximum number of boxes into torchvision.ops.nms()
+    time_limit = 20.0  # seconds to quit after
     redundant = True  # require redundant detections
     multi_label &= nc > 1  # multiple labels per box (adds 0.5ms/img)
     merge = False  # use merge-NMS
