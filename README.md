@@ -39,9 +39,10 @@
 
 ![image](https://user-images.githubusercontent.com/49705914/128113280-3f72c644-9297-4885-bf63-780a2f230124.png)
 
-- 飞机11类mAP  0.41左右
+- 飞机11类mAP  0.82左右
 
-![image](https://user-images.githubusercontent.com/49705914/128113962-a6364e76-e90f-4ef4-b53e-70fded61dc90.png)
+![image](https://user-images.githubusercontent.com/49705914/128284942-27fe2008-83eb-47c2-8754-204cef5e60ad.png)
+
 ![image](https://user-images.githubusercontent.com/49705914/128113905-bf5171a4-bcd3-44e5-9269-ceee65f2284e.png)
 
 准确率很高，但是有些类别召回率比较低，需要进一步排查
