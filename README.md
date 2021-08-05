@@ -42,7 +42,6 @@
 - 飞机11类mAP  0.82左右
 
 ![image](https://user-images.githubusercontent.com/49705914/128284942-27fe2008-83eb-47c2-8754-204cef5e60ad.png)
-需要进一步排查原因，修改loss函数等
 
 
 
