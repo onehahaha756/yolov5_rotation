@@ -42,10 +42,6 @@
 - 飞机11类mAP  0.82左右
 
 ![image](https://user-images.githubusercontent.com/49705914/128284942-27fe2008-83eb-47c2-8754-204cef5e60ad.png)
-
-![image](https://user-images.githubusercontent.com/49705914/128113905-bf5171a4-bcd3-44e5-9269-ceee65f2284e.png)
-
-准确率很高，但是有些类别召回率比较低，需要进一步排查
 需要进一步排查原因，修改loss函数等
 
 
