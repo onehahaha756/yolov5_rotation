@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import cv2,glob,os,pickle
-import torch
+import torch,math
 import torch.backends.cudnn as cudnn
 
 import os.path as osp
@@ -22,7 +22,35 @@ from utils.eval_casia import casia_eval
 multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
 # multi_img_type=['*PAN.tif']# remote origin image
 #def work_dirs(data_dir):
-
+CLASSES=['A','B','C','D','E','F','G','H','I','J','K']
+def rboxes2points(bboxes,cls_idx,score_thr=0):
+    assert bboxes.shape[1] == 5 or bboxes.shape[1] == 6
+    labels=np.full(bboxes.shape[0],cls_idx)
+    results_list=[]
+    if score_thr > 0:
+        assert bboxes.shape[1] == 6
+        scores = bboxes[:, -1]
+        inds = scores > score_thr
+        bboxes = bboxes[inds, :]
+        labels=labels[inds]
+        scores=scores[inds]
+    
+    for label,bbox,score in zip(labels,bboxes,scores):
+        object_dict={}
+        xc, yc, w, h, ag, obj,clss = bbox.tolist()
+        wx, wy = w / 2 * math.cos(ag), w / 2 * math.sin(ag)
+        hx, hy = -h / 2 * math.sin(ag), h / 2 * math.cos(ag)
+        p1 = (xc - wx - hx, yc - wy - hy)
+        p2 = (xc + wx - hx, yc + wy - hy)
+        p3 = (xc + wx + hx, yc + wy + hy)
+        p4 = (xc - wx + hx, yc - wy + hy)
+        #ps = np.int0(np.array([p1, p2, p3, p4]))
+        label_text=CLASSES[label]
+        object_dict['category_id']=label_text
+        object_dict['points']=[[float(x[0]),float(x[1])] for x in [p1,p2,p3,p4]]
+        object_dict['confidence']=float(score)
+        results_list.append(object_dict)
+    return results_list
 
 @torch.no_grad()
 def detect(weights='yolov5s.pt',  # model.pt path(s)
@@ -109,35 +137,29 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
         
         ori_img=cv2.imread(imgpath)
-        
         H,W,C=ori_img.shape
-        step_h,step_w=(imgsz-overlap),(imgsz-overlap)
-        ori_preds=[]
-        for x_shift in range(0,W-imgsz+1,step_w):
-            for y_shift in range(0,H-imgsz+1,step_h):
-                img=ori_img[y_shift:y_shift+imgsz,x_shift:x_shift+imgsz,:]
-                #read
-                # import pdb;pdb.set_trace()
-                img=img.transpose(2,0,1)
-                img = torch.from_numpy(img).to(device)
-
-                img = img.half() if half else img.float()  # uint8 to fp16/32
-                img /= 255.0  # 0 - 255 to 0.0 - 1.0
-                if img.ndimension() == 3:
-                    img = img.unsqueeze(0)
-
-                # Inference
-                pred = model(img, augment=augment)[0]
-                # Apply NMS
-                # import pdb;pdb.set_trace()
-                pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-                # import pdb;pdb.set_trace()
+        img=ori_img.copy()
         
+        img=img.transpose(2,0,1)
+        img = torch.from_numpy(img).to(device)
+
+        img = img.half() if half else img.float()  # uint8 to fp16/32
+        img /= 255.0  # 0 - 255 to 0.0 - 1.0
+        if img.ndimension() == 3:
+            img = img.unsqueeze(0)
+
+        # Inference
+        pred = model(img, augment=augment)[0]
+        # Apply NMS
         # import pdb;pdb.set_trace()
+        pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+        # import pdb;pdb.set_trace()
+        
+        import pdb;pdb.set_trace()
         if len(pred[0])>0:
             # import pdb;pdb.set_trace()
             pred=[pd.cpu().numpy().tolist() for pd in pred[0]]
-            det_results[basename]=ori_preds
+            det_results[basename]=pred
             p = Path(imgpath)
             print(f'detected {len(pred)} ships!')
             

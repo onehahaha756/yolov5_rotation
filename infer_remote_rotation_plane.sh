@@ -1,12 +1,11 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_rotation.py \
---weights runs/train/tzplane6/weights/best.pt  \
---conf 0.1 \
+--weights runs/train/tzplane16/weights/best.pt  \
+--conf 0.01 \
 --iou 0.5 \
 --imgsz 4096 \
---device cpu \
 --overlap 0 \
 --remote \
---source /data/03_Datasets/CasiaDatasets/Plane/TZ_Plane_Dotaformat/val/images \
+--source  /data/03_Datasets/CasiaDatasets/Plane/TZ_Plane_Dotaformat/train/images \
 --annot_dir /data/03_Datasets/CasiaDatasets/Plane/TZ_Plane_Dotaformat/val/labelTxt
 
 #--nosave \

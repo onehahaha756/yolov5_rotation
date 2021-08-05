@@ -599,7 +599,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
         # Apply constraints
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         x = x[xc[xi]]  # confidence
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         # Cat apriori labels if autolabelling
         if labels and len(labels[xi]):
             l = labels[xi]
@@ -645,7 +645,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
         # Batched NMS
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
         boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         i = nms_rotated(boxes, scores, iou_thres)  # NMS
         if i.shape[0] > max_det:  # limit detections
             i = i[:max_det]
@@ -740,7 +740,9 @@ def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, cl
         # import pdb;pdb.set_trace()
         # Batched NMS
         c = x[:, 6:7] * (0 if agnostic else max_wh)  # classes
-        boxes, scores = x[:, :5] + c, x[:, 5]  # boxes (offset by class), scores
+        boxes, scores = x[:, :5].clone(), x[:, 5]  # boxes (offset by class), scores
+        boxes[:,:2]+=c
+        # import pdb;pdb.set_trace()
         i = nms_rotated(boxes, scores, iou_thres)  # NMS
         # import pdb;pdb.set_trace()
         if i.shape[0] > max_det:  # limit detections
@@ -752,7 +754,7 @@ def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, cl
         #     x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(1, keepdim=True)  # merged boxes
         #     if redundant:
         #         i = i[iou.sum(1) > 1]  # require redundancy
-
+        # import pdb;pdb.set_trace()
         output[xi] = x[i]
         # import pdb;pdb.set_trace()
         if (time.time() - t) > time_limit:
