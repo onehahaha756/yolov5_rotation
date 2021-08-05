@@ -36,8 +36,12 @@
 - 脚本 infer_remote_rotation.sh，修改数据路径及模型权重，会保存测试图像结果，但目前需要进一步修改旋转框的评价代码，评测结果暂不可用
 ### 测试结果
 - 舰船AP       0.674
-- 飞机11类mAP  0.41左右
-需要进一步排查原因，修改loss函数等
+
+![image](https://user-images.githubusercontent.com/49705914/128113280-3f72c644-9297-4885-bf63-780a2f230124.png)
+
+- 飞机11类mAP  0.82左右
+
+![image](https://user-images.githubusercontent.com/49705914/128284942-27fe2008-83eb-47c2-8754-204cef5e60ad.png)
 
 
 
