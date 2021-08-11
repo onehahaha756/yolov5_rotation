@@ -430,6 +430,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.batch = bi  # batch index of image
         self.n = n
         self.indices = range(n)
+        # import pdb;pdb.set_trace()
 
         # Rectangular Training
         if self.rect:
@@ -513,10 +514,12 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         hyp = self.hyp
         mosaic = self.mosaic and random.random() < hyp['mosaic']
+        # print(hyp['mosaic'],mosaic)
         if mosaic:
             # Load mosaic
             img, labels = load_mosaic(self, index)
             shapes = None
+            print('sucess get one masic')
 
             # MixUp https://arxiv.org/pdf/1710.09412.pdf
             if random.random() < hyp['mixup']:
@@ -542,7 +545,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         if self.augment:
             # Augment imagespace
             if not mosaic:
-                img, labels = random_perspective(img, labels,
+                img, labels[:,:5] = random_perspective(img, labels[:,:5],
                                                  degrees=hyp['degrees'],
                                                  translate=hyp['translate'],
                                                  scale=hyp['scale'],
@@ -569,12 +572,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 img = np.flipud(img)
                 if nL:
                     labels[:, 2] = 1 - labels[:, 2]
+                    labels[:,[3,4]]=labels[:,[4,3]]
+                    labels[:,5]=1-labels[5]
 
             # flip left-right
             if random.random() < hyp['fliplr']:
                 img = np.fliplr(img)
                 if nL:
                     labels[:, 1] = 1 - labels[:, 1]
+                    labels[:,[3,4]]=labels[:,[4,3]]
+                    labels[:,5]=1-labels[5]
 
         labels_out = torch.zeros((nL, 7))
         if nL:
@@ -583,7 +590,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
-
+        # import pdb;pdb.set_trace()
+        # print(labels_out.shape)
         return torch.from_numpy(img), labels_out, self.img_files[index], shapes
 
     @staticmethod
@@ -670,10 +678,13 @@ def load_mosaic(self, index):
     s = self.img_size
     yc, xc = [int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border]  # mosaic center x, y
     indices = [index] + random.choices(self.indices, k=3)  # 3 additional image indices
+    
     # import pdb;pdb.set_trace()
     for i, index in enumerate(indices):
         # Load image
         img, _, (h, w) = load_image(self, index)
+        # print()
+        # import pdb;pdb.set_trace()
 
         # place img in img4
         if i == 0:  # top left
@@ -696,10 +707,12 @@ def load_mosaic(self, index):
 
         # Labels
         labels, segments = self.labels[index].copy(), self.segments[index].copy()
+        # print(labels)
         if labels.size:
-            labels[:, 1:] = xywhn2xyxy(labels[:, 1:], w, h, padw, padh)  # normalized xywh to pixel xyxy format
+            labels[:, 1:5] = xywhn2xyxy(labels[:, 1:5], w, h, padw, padh)  # normalized xywh to pixel xyxy format
             segments = [xyn2xy(x, w, h, padw, padh) for x in segments]
         labels4.append(labels)
+        # print(labels)
         segments4.extend(segments)
 
     # Concat/clip labels
@@ -707,16 +720,17 @@ def load_mosaic(self, index):
     for x in (labels4[:, 1:], *segments4):
         np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()
     # img4, labels4 = replicate(img4, labels4)  # replicate
-
+    print('before',labels4.shape)
     # Augment
-    img4, labels4 = random_perspective(img4, labels4, segments4,
+    img4, aa = random_perspective(img4, labels4[:,:5], segments4,
                                        degrees=self.hyp['degrees'],
                                        translate=self.hyp['translate'],
                                        scale=self.hyp['scale'],
                                        shear=self.hyp['shear'],
                                        perspective=self.hyp['perspective'],
                                        border=self.mosaic_border)  # border to remove
-
+    print(aa.shape)
+    print('after',labels4.shape)
     return img4, labels4
 
 
@@ -848,7 +862,8 @@ def random_perspective(img, targets=(), segments=(), degrees=10, translate=.1, s
                        border=(0, 0)):
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
     # targets = [cls, xyxy]
-
+    # import pdb;pdb.set_trace()
+    targets2=targets.copy()
     height = img.shape[0] + border[0] * 2  # shape(h,w,c)
     width = img.shape[1] + border[1] * 2
 
@@ -895,7 +910,8 @@ def random_perspective(img, targets=(), segments=(), degrees=10, translate=.1, s
     # ax[1].imshow(img2[:, :, ::-1])  # warped
 
     # Transform label coordinates
-    n = len(targets)
+    print('here in...')
+    n = len(targets2)
     if n:
         use_segments = any(x.any() for x in segments)
         new = np.zeros((n, 4))
@@ -912,7 +928,7 @@ def random_perspective(img, targets=(), segments=(), degrees=10, translate=.1, s
 
         else:  # warp boxes
             xy = np.ones((n * 4, 3))
-            xy[:, :2] = targets[:, [1, 2, 3, 4, 1, 4, 3, 2]].reshape(n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy[:, :2] = targets2[:, [1, 2, 3, 4, 1, 4, 3, 2]].reshape(n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
             xy = xy @ M.T  # transform
             xy = (xy[:, :2] / xy[:, 2:3] if perspective else xy[:, :2]).reshape(n, 8)  # perspective rescale or affine
 
@@ -924,13 +940,15 @@ def random_perspective(img, targets=(), segments=(), degrees=10, translate=.1, s
             # clip
             new[:, [0, 2]] = new[:, [0, 2]].clip(0, width)
             new[:, [1, 3]] = new[:, [1, 3]].clip(0, height)
-
+        print('second here')
         # filter candidates
         i = box_candidates(box1=targets[:, 1:5].T * s, box2=new.T, area_thr=0.01 if use_segments else 0.10)
-        targets = targets[i]
-        targets[:, 1:5] = new[i]
+        targets2 = targets2[i]
+        print(new[i].shape,targets2.shape)
+        targets2[:, 1:5] = new[i]
+        print('finish')
 
-    return img, targets
+    return img, targets2
 
 
 def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.1, eps=1e-16):  # box1(4,n), box2(4,n)

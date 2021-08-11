@@ -3,6 +3,7 @@
 .cache
 .idea
 runs
+
 output
 coco
 storage.googleapis.com
@@ -18,7 +19,7 @@ data/samples/*
 **/*.onnx
 **/*.mlmodel
 **/*.torchscript
-
+!runs/train/tzplane21/weights/best.pt
 
 # Below Copied From .gitignore -----------------------------------------------------------------------------------------
 # Below Copied From .gitignore -----------------------------------------------------------------------------------------

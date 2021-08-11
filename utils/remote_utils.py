@@ -17,21 +17,24 @@ def crop_xyxy2ori_xyxy(pred,x_shift,y_shift):
         ori_x1,ori_y1,ori_x2,ori_y2=x1+x_shift,y1+y_shift,x2+x_shift,y2+y_shift
         ori_pred.append([ori_x1,ori_y1,ori_x2,ori_y2,conf,cls])
     return ori_pred
-def rboxes2points(bboxes,cls_idx,CLASSES,score_thr=0):
-    assert bboxes.shape[1] == 5 or bboxes.shape[1] == 6
-    labels=np.full(bboxes.shape[0],cls_idx)
+def rboxes2points(pred,CLASSES,score_thr=0):
+    # import pdb;pdb.set_trace()
+    pred=np.array(pred)
+    assert pred.shape[1] == 6 or pred.shape[1] == 7
+    labels=pred[:,-1]
+    scores=pred[:,-2]
+    bboxes=pred[:,:5]
     results_list=[]
     if score_thr > 0:
-        assert bboxes.shape[1] == 6
-        scores = bboxes[:, -1]
+        assert pred.shape[1] == 7
         inds = scores > score_thr
-        bboxes = bboxes[inds, :]
+        bboxes = pred[inds, :]
         labels=labels[inds]
         scores=scores[inds]
     
     for label,bbox,score in zip(labels,bboxes,scores):
         object_dict={}
-        xc, yc, w, h, ag, p = bbox.tolist()
+        xc, yc, w, h, ag = bbox.tolist()
         wx, wy = w / 2 * math.cos(ag), w / 2 * math.sin(ag)
         hx, hy = -h / 2 * math.sin(ag), h / 2 * math.cos(ag)
         p1 = (xc - wx - hx, yc - wy - hy)
@@ -39,7 +42,7 @@ def rboxes2points(bboxes,cls_idx,CLASSES,score_thr=0):
         p3 = (xc + wx + hx, yc + wy + hy)
         p4 = (xc - wx + hx, yc - wy + hy)
         #ps = np.int0(np.array([p1, p2, p3, p4]))
-        label_text=CLASSES[label]
+        label_text=CLASSES[int(label)]
         object_dict['category_id']=label_text
         object_dict['points']=[[float(x[0]),float(x[1])] for x in [p1,p2,p3,p4]]
         object_dict['confidence']=float(score)
@@ -60,7 +63,7 @@ def draw_clsdet_rotation(img,cls_dets,vis_thresh=0.001):
         if score>vis_thresh:
             cv2.polylines(img2,[bbox],True,(0,255,0),3)
             put_text='conf : {:.3f}'.format(score)
-            cv2.putText(img2,put_text,(int(x+w),int(y+h)),3,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)
+            cv2.putText(img2,put_text,(int(x+w/2),int(y+h/2)),3,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)
     return img2
 
 def draw_clsdet(img,cls_dets,vis_thresh):

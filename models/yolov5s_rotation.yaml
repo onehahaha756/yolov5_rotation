@@ -5,9 +5,9 @@ width_multiple: 0.50  # layer channel multiple
 
 # anchors
 anchors:
-  - [18,19,  26,34,  36,29]  # P3/8
-  - [38,39,  52,50,  65,65]  # P4/16
-  - [79,73,  91,90,  137,132]  # P5/32
+  - [26,34]  # P3/8
+  - [52,50]  # P4/16
+  - [91,90]  # P5/32
 
 # YOLOv5 backbone
 backbone:

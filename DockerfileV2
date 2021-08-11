@@ -1,0 +1,13 @@
+# Start FROM Nvidia PyTorch image https://ngc.nvidia.com/catalog/containers/nvidia:pytorch
+FROM image.rsaicp.com/i18801067234/yolov5_rotation:1.0.0
+
+# Install linux packages
+
+COPY ./submit_infer_rsaicp_plane.sh /work/submit_infer_rsaicp_plane.sh
+
+#WORKDIR /work/
+
+#CMD ["sh", "submit_infer_rsaicp_plane.sh"]
+
+
+

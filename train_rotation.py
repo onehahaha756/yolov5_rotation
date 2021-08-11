@@ -200,7 +200,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Trainloader
     dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, single_cls,
-                                            hyp=hyp, augment=False, cache=opt.cache_images, rect=opt.rect, rank=rank,
+                                            hyp=hyp, augment=True, cache=opt.cache_images, rect=opt.rect, rank=rank,
                                             rotation=opt.rotation,world_size=opt.world_size, workers=opt.workers,
                                             image_weights=opt.image_weights, quad=opt.quad, prefix=colorstr('train: '))
     mlc = np.concatenate(dataset.labels, 0)[:, 0].max()  # max label class
@@ -291,7 +291,7 @@ def train(hyp, opt, device, tb_writer=None):
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
-
+            # import pdb;pdb.set_trace()
             # Warmup
             if ni <= nw:
                 xi = [0, nw]  # x interp
@@ -341,7 +341,7 @@ def train(hyp, opt, device, tb_writer=None):
                 pbar.set_description(s)
 
                 # Plot
-                if True and ni < 3:
+                if True and ni < 10:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
                     # import pdb;pdb.set_trace()
                     plot_images_rotation(imgs, targets, paths, f)
