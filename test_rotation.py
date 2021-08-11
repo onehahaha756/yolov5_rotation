@@ -217,20 +217,7 @@ def test(data,
         #     f = save_dir / f'test_batch{batch_i}_pred.jpg'  # predictions
         #     Thread(target=plot_images, args=(img, output_to_target(out), paths, f, names), daemon=True).start()
     # import pdb;pdb.set_trace()
-    # Compute statistics
-    # import pdb;pdb.set_trace()
-    #tp=tp.reshape(len(tp),-1)
-    # confidence=confidence.reshape(1,-1)
-    # pred_cls=pred_cls.reshape(1,-1)
-    # if len(tp) and tp.any():
-    #     tp=tp.reshape(len(tp),-1)
-    #     p, r, ap, f1, ap_class = ap_per_class(tp,confidence, pred_cls,target_cls,plot=plots, save_dir=save_dir, names=names)
-        
-    #     # import pdb;pdb.set_trace()
-    #     ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
-    #     mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-    #     nt = len(groudtruth)  # number of targets per class
-    # import pdb;pdb.set_trace()
+
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
     # import pdb;pdb.set_trace()
     if len(stats) and stats[0].any():
@@ -240,7 +227,6 @@ def test(data,
         nt = np.bincount(stats[3].astype(np.int64), minlength=nc) 
     else:
         nt = torch.zeros(1)
-    # import pdb;pdb.set_trace()
 
     # Print results
     pf = '%20s' + '%11i' * 2 + '%11.3g' * 4  # print format
