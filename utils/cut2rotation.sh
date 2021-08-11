@@ -6,4 +6,4 @@ python3 cut2rotation.py \
 --vis_label True \
 --save_nage_ratio 0 \
 -c 640 \
--l 200
+-l 200 

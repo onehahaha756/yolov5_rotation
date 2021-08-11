@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES=1 python3 train_rotation.py \
 --weights yolov5s.pt \
 --img 640 \
---workers 16 \
+--workers 0 \
 --cfg models/yolov5s.yaml \
 --data data/tzplane.yaml \
 --hyp data/hyp.scratch.yaml \
