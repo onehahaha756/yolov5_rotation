@@ -34,9 +34,12 @@
 - 脚本 dis_train_rotation.sh，修改数据路径运行
 6. 测试及评价
 - 脚本 infer_remote_rotation.sh，修改数据路径及模型权重，会保存测试图像结果，但目前需要进一步修改旋转框的评价代码，评测结果暂不可用
-### 训练标签
+### 训练标签可视化
 数据集地址:https://www.rsaicp.com/portal/contestDetail?id=2&tab=rule
 ![image](https://user-images.githubusercontent.com/49705914/129001296-1397d0ba-75bb-4a4d-ac70-26abaf0f0bc5.png)
+dotav2数据集
+![image](https://user-images.githubusercontent.com/49705914/129298756-d16c4855-b508-4ca3-a2d4-21fc3105ff1c.png)
+
 ### 测试结果
 - 舰船AP       0.674
 
