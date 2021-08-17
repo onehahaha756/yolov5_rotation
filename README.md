@@ -1,5 +1,6 @@
 
 ## 基于yolov5的旋转框目标检测
+课题需要，需要做旋转目标检测，因此尝试了基于Yolov5的旋转目标检测。
 ### 修改的地方
 1. 数据表示方式
 - 飞机检测或舰船检测，原始数据集格式为Dota标注格式:
@@ -11,7 +12,7 @@
 - 对x,y,w,h,theta进行坐标归一化
    (x/imgsz,y/imgsz,w/imgsz,h/imgsz,theta/90)
 2. Dataloader修改（dataloader_rotation.py)
-   关闭了数据增广（to do next），调整了dataloader加载的格式。
+   数据增广:翻转，平移，马赛克
 3. 模型修改
 - 修改模型Detect模块，增加bbox theta的维度
 - loss修改
