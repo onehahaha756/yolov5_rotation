@@ -13,7 +13,11 @@
    (x/imgsz,y/imgsz,w/imgsz,h/imgsz,theta/90)
 2. Dataloader修改（dataloader_rotation.py)
    数据增广:翻转，平移，马赛克
-3. 模型修改
+3. 数据增广
+- mosic增广：
+  mosic增广时，由于图片平移拼接时，部分目标会部分出界，此处的处理方式是：若旋转框的中心在图片中，则保留目标，否则则丢弃目标。目标的旋转框尺寸不变。
+- 翻转：label的w,h坐标互换，角度取余角
+1. 模型修改
 - 修改模型Detect模块，增加bbox theta的维度
 - loss修改
   简单起见，[x,y,w,h]依旧采用iou loss回归，theta用smoothL1回归，需要进一步改进
