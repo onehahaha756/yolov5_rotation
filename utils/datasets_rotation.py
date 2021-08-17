@@ -1001,7 +1001,7 @@ def random_perspective(img, targets=(), segments=(), degrees=10, translate=.1, s
     # Transform label coordinates
     n = len(targets2)
     if n:
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         use_segments = any(x.any() for x in segments)
         new = np.zeros((n, 4))
         if use_segments:  # warp segments

@@ -26,7 +26,7 @@
    Nms在测试的时候进行重叠框过滤，旋转框iou计算，调用detectron2的函数
    detectron2 : https://github.com/facebookresearch/detectron2/tree/66d658de02a2579d9516a72d94e98a394e2f0ccf/detectron2
 6. 评价代码修改
-   制作数据集时，将4096图像切成了640尺寸大小，测试时采用自己编写的代码，之前写的是针对矩形框的，需要针对旋转框修改下nms和评价的代码（to do）
+   参考detect_big_rotation.py
 ### 从头开始训练及测试流程（代码使用说明)
 1. dota标注数据集格式转yolov5 rotation标注格式
 - 脚本 utils/cut2rotation.sh ，修改数据集路径和滑窗切片大小及重叠面积即可
