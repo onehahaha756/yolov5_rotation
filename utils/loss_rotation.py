@@ -183,9 +183,11 @@ class ComputeLoss:
                             [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m
                             # [1, 1], [1, -1], [-1, 1], [-1, -1],  # jk,jm,lk,lm
                             ], device=targets.device).float() * g  # offsets
+        # print(self.anchors)
         # import pdb;pdb.set_trace()
         for i in range(self.nl):
             anchors = self.anchors[i]
+            
             gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
             # import pdb;pdb.set_trace()
             # Match targets to anchors

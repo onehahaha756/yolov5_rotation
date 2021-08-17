@@ -5,8 +5,9 @@ from typing import cast
 import numpy as np
 # from nms import nms
 import matplotlib.pyplot as plt 
-GTCLASS=['ship'] #only one class
-
+import yaml,cv2,torch
+#GTCLASS=['ship'] #only one class
+from detectron2._C import box_iou_rotated
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -65,6 +66,15 @@ def polygons2rect(polygon_list):
         rect_list.append((annot_name,(xmin,ymin,xmax,ymax)))
 
     return rect_list
+def polygons2rotation(polygon_list):
+    rotation_bboxes=[]
+    for polygon in polygon_list:
+        annot_name=polygon[0]
+        #x1,y1,x2,y2,x3,y3,x4,y4=polygon[1]
+        rotation_bbox=cv2.minAreaRect(np.array(polygon[1]).reshape(-1,2))
+        (x,y),(w,h),theta=rotation_bbox
+        rotation_bboxes.append((annot_name,[x,y,w,h,theta]))
+    return rotation_bboxes
 
 def LoadTxtGt_polygon(annot_dir,txttype='polygon'):
     '''
@@ -82,7 +92,8 @@ def LoadTxtGt_polygon(annot_dir,txttype='polygon'):
         basename=osp.splitext(osp.basename(annot_path))[0]
         # import pdb;pdb.set_trace()
         polygon_list=DotaTxt2polygons(annot_path)
-        gt_dict[basename]=polygon_list
+        rotation_bboxes=polygons2rotation(polygon_list)
+        gt_dict[basename]=rotation_bboxes
     #assert len(gt_dict.keys())!=0,'ground truth object is 0,please check your annotation directory!'
     return gt_dict
 def LoadTxtGt_rect(annot_dir):
@@ -140,7 +151,7 @@ def voc_ap(rec, prec, use_07_metric=True):
     return ap
 
 
-def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovthresh=0.5,nms_thre=0.5,use_07_metric=False):
+def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.5,nms_thre=0.5,use_07_metric=False):
     '''
     this is single class ap caculate code,for 
     annot_dir:txt format annot_dir,txt format is:
@@ -165,7 +176,7 @@ def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovt
     gt_dict=LoadTxtGt_polygon(annot_dir,annot_type)
     det_dict=LoadDetfile(det_path)
     # import pdb;pdb.set_trace()
-    imagenames = [osp.splitext(osp.basename(x))[0] for x in imglist]  
+    imagenames = gt_dict.keys() #[osp.splitext(osp.basename(x))[0] for x in imglist]  
     cls_det=[] 
     cls_gt={} 
     #select groud truth of this cls 
@@ -183,10 +194,13 @@ def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovt
                 detflag=0
                 GtNmus+=1
                 gtbbox=gt[1]
-                cls_bboxes.append([gtbbox,detflag])
+                # import pdb;pdb.set_trace()
+                cls_bboxes.append([gtbbox+[gt[0]],detflag])
         #make sure image has the cls object
         if len(cls_bboxes)>0:
             cls_gt[imagename]=cls_bboxes
+        else:
+            cls_gt[imagename]=[]
     
     #select detections of this cls
     for imagename in imagenames:
@@ -196,8 +210,9 @@ def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovt
         # dets=nms(dets,nms_thre,conf_thre)
         for det in dets:
             #import pdb;pdb.set_trace()
-            if det[-1]==GTCLASS.index(classname):
+            if det[-1]==classname:
                 cls_det.append(([imagename]+det[:]))
+    # import pdb;pdb.set_trace()
     if len(cls_det)>1:
         #get detction confidence and bbox
         '''
@@ -224,7 +239,7 @@ def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovt
         nd = len(BBox)
         tp = np.zeros(nd)
         fp = np.zeros(nd)
-        print('cofidence thre: {}\ntotal predicted bbox : {}'.format(conf_thre,len(BBox)))
+        # print('cofidence thre: {}\ntotal predicted bbox : {}'.format(conf_thre,len(BBox)))
         for d in range(nd):
             #import pdb;pdb.set_trace()
             '''
@@ -232,37 +247,39 @@ def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovt
             '''
             imgname=imageids[d]
             #import pdb;pdb.set_trace()
-            cls_gtbboxs=cls_gt[imgname]
+            try:
+                cls_gtbboxs=cls_gt[imgname]
+            except:
+                import pdb;pdb.set_trace()
             #image has no object, so the bbox is false positive
             if len(cls_gtbboxs)==0:
                 fp[d]=1
                 continue
-            import pdb;pdb.set_trace()
+            # import pdb;pdb.set_trace()
 
-            BBGT=np.array([bbox[0] for bbox in cls_gtbboxs])
+            BBGT=np.array([bbox[0][:-1] for bbox in cls_gtbboxs])
             bb=BBox[d,:].astype(float)
-            ixmin = np.maximum(BBGT[:, 0], bb[0])
-            iymin = np.maximum(BBGT[:, 1], bb[1])
-            ixmax = np.minimum(BBGT[:, 2], bb[2])
-            iymax = np.minimum(BBGT[:, 3], bb[3])
-
-            iw = np.maximum(ixmax - ixmin, 0.)
-            ih = np.maximum(iymax - iymin, 0.)
-            inters = iw * ih
-            uni = ((bb[2] - bb[0]) * (bb[3] - bb[1]) +
-                       (BBGT[:, 2] - BBGT[:, 0]) *
-                       (BBGT[:, 3] - BBGT[:, 1]) - inters)
-            overlaps = inters / uni
-            ovmax = np.max(overlaps)
-            jmax = np.argmax(overlaps)
-
-            if ovmax > ovthresh:
-                if not cls_gt[imgname][jmax][-1]:
+            BBGT=torch.from_numpy(BBGT).float()
+            bb=torch.from_numpy(bb).float()
+            ious, i =box_iou_rotated(BBGT,bb).max(1)
+            #get >iouthre index
+            ind=torch.where(ious>ovthresh)
+            if not len(ind[0])>0:
+                fp[d]=1.
+                continue
+            #sort ious 
+            match_ious,sort_ind=ious[ind].sort(descending=True)
+            #get match inds on order
+            try:
+                match_inds=ind[0][sort_ind]
+            except:
+                import pdb;pdb.set_trace()
+            for m_ind in match_inds:
+                if not cls_gt[imgname][m_ind][-1]:
                     tp[d] = 1.
-                    cls_gt[imgname][jmax][-1] = 1
-                else:
-                    fp[d] = 1.
-            else:
+                    cls_gt[imgname][m_ind][-1] = 1
+                    break
+            if not tp[d]:
                 fp[d] = 1.
         # compute precision recall
         fp = np.cumsum(fp)
@@ -275,13 +292,13 @@ def casia_eval(annot_dir,annot_type,det_path,imglist,classname,conf_thre=0.3,ovt
 
   
         #import pdb;pdb.set_trace()
-        print('*'*15)
-        #print('save path : {} ')
-        #print('weights path :{}\n'.format(args.trained_model))
-        print('iou overthre:{}\nConfidence thre:{}\nAP:{}\nMaxRecall:{} \nMinPrecision: {}'\
-            .format(ovthresh,conf_thre,ap,rec[-1],prec[-1]))
-        save_txt=osp.splitext(det_path)[0]+'AP.txt'
-        # with open(save_txt,'w') as f:
+        # print('*'*15)
+        # #print('save path : {} ')
+        # #print('weights path :{}\n'.format(args.trained_model))
+        # print('iou overthre:{}\nConfidence thre:{}\nAP:{}\nMaxRecall:{} \nMinPrecision: {}'\
+        #     .format(ovthresh,conf_thre,ap,rec[-1],prec[-1]))
+        # save_txt=osp.splitext(det_path)[0]+'AP.txt'
+        # # with open(save_txt,'w') as f:
         #     f.write(('iou overthre:{} \
         #               Confidence thre:{} \
         #               AP:{} \
@@ -318,7 +335,7 @@ if __name__=='__main__':
                         ,help='for cutimages is rect,for dota annot is polygon')
     parser.add_argument('--det_path', default='MixShip/MixShip_iter40000/detections.pkl',
                         help='detection results path')
-    parser.add_argument('--clss', default='ship', type=str,
+    parser.add_argument('--datafile', default='data/dotaV2.yaml', type=str,
                         help='annote class in txt file')
     parser.add_argument('--iou_thre', default=0.3, type=float,
                         help='evalution iou thre ')
@@ -330,9 +347,18 @@ if __name__=='__main__':
 
     
     args = parser.parse_args()
-    imglist=glob.glob(osp.join(args.image_dir,'*.jpg'))
-    rec,prec,ap=casia_eval(args.annot_dir,args.annot_type,args.det_path,  
-                    imglist,args.clss,args.iou_thre,args.conf_thre)
+    #imglist=glob.glob(osp.join(args.image_dir,'*.png'))
+    dataconfig=open(args.datafile,'r',encoding='utf-8')
+    datanames=yaml.load(dataconfig)
+    classnames=datanames['names']
+    aps=[]
+    for clss in classnames:
+        rec,prec,ap=casia_eval(args.annot_dir,args.annot_type,args.det_path,  
+                   clss,args.iou_thre,args.conf_thre)
+        aps.append([rec,prec,ap])
+        print('{:<30} : {:<20}    total pred: {:<20}'.format(clss,ap,len(rec)))
+    # import pdb;pdb.set_trace()
+    # print(aps)
     # print('*'*15+\
     #      '\niou overthre:{}\nConfidence thre:{}\nAP:{}\nMaxRecall:{} \nMinPrecision: {}'\
     #     .format(args.iou_thre,args.conf_thre,ap,rec[-1],prec[-1]))

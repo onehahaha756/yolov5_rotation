@@ -1,5 +1,5 @@
 python3 detect_rotation.py \
---weights runs/train/tzplane21/weights/best.pt  \
+--weights runs/submit_pts/best.pt  \
 --conf 0.5 \
 --iou 0.5 \
 --imgsz 4096 \

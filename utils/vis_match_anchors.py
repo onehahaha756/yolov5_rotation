@@ -12,11 +12,12 @@ pre_anchors=[[23,28, 68,57, 46,113],
     [143,44, 135,78, 98,127],
     [236,112, 148,209, 243,282]]
 
-pre_anchors=[[30.,10.,  19.,66.,  71.,23.],  # P3/8
-   [125.,30.,  30.,135.,  212.,39.],  # P4/16
-  [45.,248.,  321.,72.,  69.,351.] ] # P5/32
+pre_anchors=  [[6,12,  12,6,  12,26],  # P3/8
+  [42,19,  28,52,  73,33], # P4/16
+  [38,89,  286,93,  121,317] ] # P5/32
+
 stride=[8.,16.,32.]
-anchor_t=3.0
+anchor_t=4.0
 
 na=len(pre_anchors[0])//2
 nl=len(pre_anchors)
@@ -178,7 +179,7 @@ def draw_targets(img,targets):
         cv2.putText(img,put_text,(50,50),1,cv2.FONT_HERSHEY_PLAIN,(0,255,0),1)
         bbox=cv2.boxPoints(rect).reshape((-1,1,2)).astype(np.int32)
 
-        cv2.polylines(img,[bbox],True,(0,255,0))
+        cv2.polylines(img,[bbox],True,(0,255,0),2,2)
 
 def vis_matched_anchor(targets,img):
     imgsz=img.shape[0]
@@ -213,10 +214,10 @@ def main(image_dir,label_dir,vis_dir):
         cv2.imwrite(vis_name,show_img)
         # import pdb;pdb.set_trace()
 # main()
-imgdir='images/train/'
-annot_dir='labels/train/'
+imgdir='/data/03_Datasets/dota_rotation/images/train'
+annot_dir='/data/03_Datasets/dota_rotation/labels/train'
 
-vis_dir='vis_anchor_dir/train/'
+vis_dir='/data/03_Datasets/dota_rotation/vis_anchors/train'
 
 if not osp.exists(vis_dir):
     os.makedirs(vis_dir)

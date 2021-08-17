@@ -341,7 +341,7 @@ def train(hyp, opt, device, tb_writer=None):
                 pbar.set_description(s)
 
                 # Plot
-                if True and ni < 10:
+                if True and ni < 20:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
                     # import pdb;pdb.set_trace()
                     plot_images_rotation(imgs, targets, paths, f)

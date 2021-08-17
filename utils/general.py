@@ -369,6 +369,7 @@ def xyxy2xywh(x):
     y[:, 1] = (x[:, 1] + x[:, 3]) / 2  # y center
     y[:, 2] = x[:, 2] - x[:, 0]  # width
     y[:, 3] = x[:, 3] - x[:, 1]  # height
+    # y[:[0,1]]=y[:,[0,1]].clip(0,640)
     # y[:, 4] = x[:, 4]            # theta
     return y
 

@@ -14,10 +14,16 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment/images/train/  # 
-val: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment/images/val/  # 
+train: /data/03_Datasets/dota_rotationV2/images/train  # 
+val: /data/03_Datasets/dota_rotationV2/images/val  # 
 # number of classes
-nc: 1
+nc: 18
 
 # class names
-names: [ 'ship' ]
+names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+               'small-vehicle', 'large-vehicle', 'ship',
+               'tennis-court', 'basketball-court',
+               'storage-tank', 'soccer-ball-field',
+               'roundabout', 'harbor',
+               'swimming-pool', 'helicopter',
+               'container-crane','airport','helipad']

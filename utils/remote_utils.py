@@ -35,6 +35,7 @@ def rboxes2points(pred,CLASSES,score_thr=0):
     for label,bbox,score in zip(labels,bboxes,scores):
         object_dict={}
         xc, yc, w, h, ag = bbox.tolist()
+        # import pdb;pdb.set_trace()
         wx, wy = w / 2 * math.cos(ag), w / 2 * math.sin(ag)
         hx, hy = -h / 2 * math.sin(ag), h / 2 * math.cos(ag)
         p1 = (xc - wx - hx, yc - wy - hy)
@@ -48,7 +49,7 @@ def rboxes2points(pred,CLASSES,score_thr=0):
         object_dict['confidence']=float(score)
         results_list.append(object_dict)
     return results_list
-def draw_clsdet_rotation(img,cls_dets,vis_thresh=0.001):
+def draw_clsdet_rotation(img,cls_dets,cls,vis_thresh=0.001):
     img2=img.copy()
 
     for i in range(len(cls_dets)):
@@ -58,12 +59,13 @@ def draw_clsdet_rotation(img,cls_dets,vis_thresh=0.001):
         rect=((x,y),(w,h),theta)
         score=cls_dets[i][-2]
         label=cls_dets[i][-1]
+        label=cls[int(label)]
         # import pdb;pdb.set_trace()
         bbox=cv2.boxPoints(rect).reshape((-1,1,2)).astype(np.int32)
         if score>vis_thresh:
-            cv2.polylines(img2,[bbox],True,(0,255,0),3)
-            put_text='conf : {:.3f}'.format(score)
-            cv2.putText(img2,put_text,(int(x+w/2),int(y+h/2)),3,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)
+            cv2.polylines(img2,[bbox],True,(0,255,0),1)
+            put_text='{} {:.3f}'.format(label,score)
+            cv2.putText(img2,put_text,(int(x-w/2),int(y-h/2)),1,cv2.FONT_HERSHEY_PLAIN,(0,255,0),1)
     return img2
 
 def draw_clsdet(img,cls_dets,vis_thresh):

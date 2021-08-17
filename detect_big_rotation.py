@@ -19,6 +19,8 @@ from utils.plots import colors, plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
 from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet,draw_clsdet_rotation,rboxes2points
 from utils.eval_casia import casia_eval
+
+from detectron2.layers import nms_rotated
 multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
 # multi_img_type=['*PAN.tif']# remote origin image
 #def work_dirs(data_dir):
@@ -31,6 +33,7 @@ CLASSES=['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
                'roundabout', 'harbor',
                'swimming-pool', 'helicopter',
                'container-crane','airport','helipad']
+CLASSES=['ship']
 
 #def 
 @torch.no_grad()
@@ -94,41 +97,63 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
         
         
         ts=time.time()
-        
+        p = Path(imgpath)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
 
         ori_img=cv2.imread(imgpath)
         H,W,C=ori_img.shape
-        print(f'{i}/{len(imglist)} processing {imgpath} shape: {(H,W,C)}')
+        # print(f'{i}/{len(imglist)} processing {imgpath} shape: {(H,W,C)}')
         H_pad=math.ceil(H/32.)*32 
         W_pad=math.ceil(W/32.)*32 
-        img=np.zeros((H_pad,W_pad,3))
-        img[:H,:W,:]=ori_img
-        print(f'resized img {(H_pad,W_pad,3)}')
-        img=img.transpose(2,0,1)
-        img = torch.from_numpy(img).to(device)
+        pad_img=np.zeros((H_pad,W_pad,3))
+        pad_img[:H,:W,:]=ori_img
+        print(f'{i}/{len(imglist)}  {imgpath} shape: {(H,W,C)} ,resized img {(H_pad,W_pad,3)}')
+        step_h,step_w=(imgsz-overlap),(imgsz-overlap)
+        ori_preds=torch.empty((0,7)).cuda()
+        for x_shift in range(0,W_pad,step_w):
+            for y_shift in range(0,H_pad,step_h):
+                y_boader,x_boader=min(imgsz,H-y_shift),min(imgsz,W-x_shift)
+                img=np.zeros((imgsz,imgsz,3))
+                img[:y_boader,:x_boader,:]=ori_img[y_shift:y_shift+y_boader,x_shift:x_shift+x_boader,:]
+                
+                
+                img=img.transpose(2,0,1)
+                img = torch.from_numpy(img).to(device)
 
-        img = img.half() if half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
-        # import pdb;pdb.set_trace()
-        # Inference
-        pred = model(img, augment=augment)[0]
-        # Apply NMS
-        # import pdb;pdb.set_trace()
-        pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-        # import pdb;pdb.set_trace()
-        
-        # import pdb;pdb.set_trace()
-        if len(pred[0])>0:
+                img = img.half() if half else img.float()  # uint8 to fp16/32
+                img /= 255.0  # 0 - 255 to 0.0 - 1.0
+                if img.ndimension() == 3:
+                    img = img.unsqueeze(0)
+                # import pdb;pdb.set_trace()
+                # Inference
+                pred = model(img, augment=augment)[0]
+                # Apply NMS
+                # import pdb;pdb.set_trace()
+                pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+                # import pdb;pdb.set_trace()
+                #1 batch
+                pred=pred[0]
+                pred[:,0]+=x_shift
+                pred[:,1]+=y_shift
+                ori_preds=torch.cat((ori_preds,pred),0)
+                # import pdb;pdb.set_trace()
+        if len(ori_preds)>0:
+            #import pdb;pdb.set_trace()
+            #nms by class shift
+            before_nms=len(ori_preds)
+            bbox_xy=ori_preds[:,:2]+imgsz*ori_preds[:,-1].reshape(-1,1)
+            bboxes=torch.cat((bbox_xy,ori_preds[:,2:5]),1)
+            scores=ori_preds[:,5]
+            nms_index=nms_rotated(bboxes,scores,iou_thres)
+            ori_preds=ori_preds[nms_index]
+            end_nms=len(ori_preds)
+            print(f'nms {before_nms-end_nms} bboxes')
+            pred=[pd.cpu().numpy().tolist() for pd in ori_preds]
             # import pdb;pdb.set_trace()
-            pred=[pd.cpu().numpy().tolist() for pd in pred[0]]
             img_result=rboxes2points(pred,CLASSES)
             # import pdb;pdb.set_trace()
-            det_results[basename]=pred
             p = Path(imgpath)
-            print(f'detected {len(pred)} ships!')
+            print(f'detected {len(pred)} objects!')
             if save_json:
                 save_result={}
                 save_result['image_name']=osp.basename(imgpath)
@@ -142,7 +167,9 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 save_path = osp.join(vis_dir,'{}.png'.format(basename))  
                 cv2.imwrite(save_path,show_img2)  
                 print(f'{save_path} saved!')
-            print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)} ({time.time()-ts:.3f}s ETA: {(time.time()-ts)*(len(imglist)-i):.3f}s)')
+            pred=[pd[:-1]+[CLASSES[int(pd[-1])]] for pd in pred]
+            det_results[basename]=pred
+        print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)} ({time.time()-ts:.3f}s ETA: {(time.time()-ts)*(len(imglist)-i):.3f}s)')
 
     det_file=os.path.join(save_dir,'results.pkl')
     if save_json!=None:
@@ -182,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--overlap', type=int, default=100, help='sub image overlap size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.05, help='NMS IoU threshold')
+    parser.add_argument('--iou-thres', type=float, default=0.5, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
     parser.add_argument('--remote', action='store_true', help='inference big remote images')    
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')

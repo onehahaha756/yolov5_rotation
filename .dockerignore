@@ -19,7 +19,9 @@ data/samples/*
 **/*.onnx
 **/*.mlmodel
 **/*.torchscript
-!runs/train/tzplane21/weights/best.pt
+!runs/train/exp392/weights/best.pt
+!runs/submit_pts/best.pt
+
 
 # Below Copied From .gitignore -----------------------------------------------------------------------------------------
 # Below Copied From .gitignore -----------------------------------------------------------------------------------------

@@ -94,7 +94,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
         
         
         ts=time.time()
-        
+        p = Path(imgpath)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
 
         ori_img=cv2.imread(imgpath)
@@ -102,28 +102,41 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
         print(f'{i}/{len(imglist)} processing {imgpath} shape: {(H,W,C)}')
         H_pad=math.ceil(H/32.)*32 
         W_pad=math.ceil(W/32.)*32 
-        img=np.zeros((H_pad,W_pad,3))
-        img[:H,:W,:]=ori_img
+        pad_img=np.zeros((H_pad,W_pad,3))
+        pad_img[:H,:W,:]=ori_img
         print(f'resized img {(H_pad,W_pad,3)}')
-        img=img.transpose(2,0,1)
-        img = torch.from_numpy(img).to(device)
+        step_h,step_w=(imgsz-overlap),(imgsz-overlap)
+        ori_preds=torch.empty((0,7)).cuda()
+        for x_shift in range(0,W_pad,step_w):
+            for y_shift in range(0,H_pad,step_h):
+                y_boader,x_boader=min(imgsz,H-y_shift),min(imgsz,W-x_shift)
+                img=np.zeros((imgsz,imgsz,3))
+                img[:y_boader,:x_boader,:]=ori_img[y_shift:y_shift+y_boader,x_shift:x_shift+x_boader,:]
+                
+                
+                img=img.transpose(2,0,1)
+                img = torch.from_numpy(img).to(device)
 
-        img = img.half() if half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
-        # import pdb;pdb.set_trace()
-        # Inference
-        pred = model(img, augment=augment)[0]
-        # Apply NMS
-        # import pdb;pdb.set_trace()
-        pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-        # import pdb;pdb.set_trace()
-        
-        # import pdb;pdb.set_trace()
-        if len(pred[0])>0:
+                img = img.half() if half else img.float()  # uint8 to fp16/32
+                img /= 255.0  # 0 - 255 to 0.0 - 1.0
+                if img.ndimension() == 3:
+                    img = img.unsqueeze(0)
+                # import pdb;pdb.set_trace()
+                # Inference
+                pred = model(img, augment=augment)[0]
+                # Apply NMS
+                # import pdb;pdb.set_trace()
+                pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+                # import pdb;pdb.set_trace()
+                #1 batch
+                pred=pred[0]
+                pred[:,0]+=x_shift
+                pred[:,1]+=y_shift
+                ori_preds=torch.cat((ori_preds,pred),0)
+                # import pdb;pdb.set_trace()
+        if len(ori_preds)>0:
             # import pdb;pdb.set_trace()
-            pred=[pd.cpu().numpy().tolist() for pd in pred[0]]
+            pred=[pd.cpu().numpy().tolist() for pd in ori_preds]
             img_result=rboxes2points(pred,CLASSES)
             # import pdb;pdb.set_trace()
             det_results[basename]=pred
@@ -142,7 +155,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 save_path = osp.join(vis_dir,'{}.png'.format(basename))  
                 cv2.imwrite(save_path,show_img2)  
                 print(f'{save_path} saved!')
-            print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)} ({time.time()-ts:.3f}s ETA: {(time.time()-ts)*(len(imglist)-i):.3f}s)')
+        print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)} ({time.time()-ts:.3f}s ETA: {(time.time()-ts)*(len(imglist)-i):.3f}s)')
 
     det_file=os.path.join(save_dir,'results.pkl')
     if save_json!=None:

@@ -4,10 +4,12 @@ FROM image.rsaicp.com/i18801067234/yolov5_rotation:1.0.0
 # Install linux packages
 
 COPY ./submit_infer_rsaicp_plane.sh /work/submit_infer_rsaicp_plane.sh
+COPY ./runs/submit_pts/best.pt /work/runs/submit_pts/best.pt
 
 #WORKDIR /work/
 
 #CMD ["sh", "submit_infer_rsaicp_plane.sh"]
-
+#docker run -it --rm -v /data/home/yaodongpan/03_Datasets/CasiaDatasets/Plane/TZ_Plane_Dotaformat/val/images:/input_path \
+#-v /data/home/yaodongpan/02_code_implement/yolov5_rotation:/output_path image.rsaicp.com/i18801067234/yolov5_rotation:1.0.5
 
 
