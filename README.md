@@ -13,7 +13,7 @@
    (x/imgsz,y/imgsz,w/imgsz,h/imgsz,theta/90)
 2. Dataloader修改（dataloader_rotation.py)
    修改一些加载函数
-3. 数据增广（支持的增广方式及处理方式)
+3. 数据增广（支持的增广方式)
 - mosic增广：mosic增广时，由于图片平移拼接时，部分目标会部分出界，此处的处理方式是：若旋转框的中心在图片中，则保留目标，否则则丢弃目标。目标的旋转框尺寸不变。
 - 翻转：label的w,h坐标互换，角度取余角
 - hsv调整: 与正矩形框相同
@@ -26,7 +26,7 @@
    Nms在测试的时候进行重叠框过滤，旋转框iou计算，调用detectron2的函数
    detectron2 : https://github.com/facebookresearch/detectron2/tree/66d658de02a2579d9516a72d94e98a394e2f0ccf/detectron2
 6. 评价代码修改
-   参考detect_big_rotation.py
+   制作数据集时，将4096图像切成了640尺寸大小，测试时采用自己编写的代码，之前写的是针对矩形框的，需要针对旋转框修改下nms和评价的代码（to do）
 ### 从头开始训练及测试流程（代码使用说明)
 1. dota标注数据集格式转yolov5 rotation标注格式
 - 脚本 utils/cut2rotation.sh ，修改数据集路径和滑窗切片大小及重叠面积即可
