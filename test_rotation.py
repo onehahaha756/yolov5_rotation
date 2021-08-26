@@ -110,6 +110,9 @@ def test(data,
 
 
     for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
+        if img.shape[0]%4!=0:
+            # print('batch cannot divide by 8')
+            continue
         t_ = time_synchronized()
         img = img.to(device, non_blocking=True)
         img = img.half() if half else img.float()  # uint8 to fp16/32

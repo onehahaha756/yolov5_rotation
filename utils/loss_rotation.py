@@ -134,7 +134,7 @@ class ComputeLoss:
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
                 p_theta=ps[:,4].sigmoid()
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
-                # import pdb;pdb.set_trace()
+                import pdb;pdb.set_trace()
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
                 # import pdb;pdb.set_trace()

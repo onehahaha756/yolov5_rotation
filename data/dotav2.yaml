@@ -27,3 +27,5 @@ names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
                'roundabout', 'harbor',
                'swimming-pool', 'helicopter',
                'container-crane','airport','helipad']
+test_images: '/data/03_Datasets/DOTA-v2.0/val/images/'
+test_labels: '/data/03_Datasets/DOTA-v2.0/val/labelTxt'

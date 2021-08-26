@@ -349,14 +349,22 @@ if __name__=='__main__':
     args = parser.parse_args()
     #imglist=glob.glob(osp.join(args.image_dir,'*.png'))
     dataconfig=open(args.datafile,'r',encoding='utf-8')
-    datanames=yaml.load(dataconfig)
-    classnames=datanames['names']
+    dataset=yaml.load(dataconfig)
+    classnames=dataset['names']
     aps=[]
+    save_txt=osp.splitext(args.det_path)[0]+'results.txt'
+    save_file=open(save_txt,'w')
+    save_file.write('iou overthre:{} \nConfidence thre:{} \n'.format(args.iou_thre,args.conf_thre))
+    nc=dataset['nc']
+    map=0
     for clss in classnames:
         rec,prec,ap=casia_eval(args.annot_dir,args.annot_type,args.det_path,  
                    clss,args.iou_thre,args.conf_thre)
         aps.append([rec,prec,ap])
         print('{:<30} : {:<20}    total pred: {:<20}'.format(clss,ap,len(rec)))
+        save_file.write('{:<20} : {:<20}    total pred: {:<20}\n'.format(clss,ap,len(rec)))
+        map+=ap/float(nc)
+    save_file.write('map {}'.format(map))
     # import pdb;pdb.set_trace()
     # print(aps)
     # print('*'*15+\
