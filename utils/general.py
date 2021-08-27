@@ -497,11 +497,11 @@ def rbox_skewiou(rbox1,rbox2):
     input:rbox1[N,5],rbox2 [N,5]
     return: skewiou[N,1]
     '''
-    skewiou=box_iou_rotated(rbox1,rbox2)
+    # import pdb;pdb.set_trace()
+    skewiou=[box_iou_rotated(rbox1[i].reshape(1,-1),rbox2[i].reshape(1,-1)) for i in range(len(rbox1))]
 
-    skewiou=torch.diag(skewiou)
 
-    return skewiou
+    return torch.Tensor(skewiou).to(rbox1.device)
 
 def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7):
     # Returns the IoU of box1 to box2. box1 is 4, box2 is nx4

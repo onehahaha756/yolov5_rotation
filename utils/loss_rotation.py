@@ -96,7 +96,7 @@ class ComputeLoss:
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
-        smooth_theta=nn.SmoothL1Loss()
+        smooth_theta=nn.SmoothL1Loss(reduction='none')
         BCEtheta=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))
         self.theta_lossfn=smooth_theta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
@@ -134,14 +134,18 @@ class ComputeLoss:
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
                 p_theta=ps[:,4].sigmoid()
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
-                import pdb;pdb.set_trace()
+                # import pdb;pdb.set_trace()
                 Rpbox=torch.cat((pbox,p_theta.reshape(-1,1)*90.),1)
                 Rtbox=torch.cat((tbox[i][:,:4],tbox[i][:,4].reshape(-1,1)*90.),1)
                 skewiou=rbox_skewiou(Rpbox,Rtbox)
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
-                lbox += (1.0 - iou).mean()  # iou loss
+                
                 # import pdb;pdb.set_trace()
-                ltheta+=self.theta_lossfn(p_theta,tbox[i][:,4])
+                ltheta =self.theta_lossfn(p_theta,tbox[i][:,4])
+                ltheta*=self.hyp['r_theta']
+                
+                lbox=ltheta+(1-iou)
+                lreg+=(lbox*(1-skewiou)).mean()
                 # Objectness
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 
@@ -162,14 +166,13 @@ class ComputeLoss:
 
         if self.autobalance:
             self.balance = [x / self.balance[self.ssi] for x in self.balance]
-        lbox *= self.hyp['box']
+        lreg *= self.hyp['box']
         lobj *= self.hyp['obj']
         lcls *= self.hyp['cls']
-        ltheta*=self.hyp['r_theta']
         bs = tobj.shape[0]  # batch size
-
-        loss = lbox + lobj + lcls+ltheta
-        return loss * bs, torch.cat((lbox, lobj,lcls, ltheta, loss)).detach()
+        # import pdb;pdb.set_trace()
+        loss = lreg + lobj + lcls
+        return loss * bs, torch.cat((lreg, lobj,lcls, ltheta.mean().reshape(1), loss)).detach()
 
     def build_targets(self, p, targets):
         # import pdb;pdb.set_trace()
