@@ -3,9 +3,9 @@
 import torch
 import torch.nn as nn
 
-from utils.general import bbox_iou
+from utils.general import bbox_iou,rbox_skewiou
 from utils.torch_utils import is_parallel
-
+from detectron2._C import box_iou_rotated
 
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
@@ -117,7 +117,7 @@ class ComputeLoss:
         # import pdb;pdb.set_trace()
     def __call__(self, p, targets):  # predictions, targets, model
         device = targets.device
-        lcls, lbox, ltheta, lobj = torch.zeros(1, device=device),torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
+        lcls, lbox, ltheta, lobj ,lreg= torch.zeros(1, device=device),torch.zeros(1, device=device),torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
 
         # Losses
@@ -134,7 +134,10 @@ class ComputeLoss:
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
                 p_theta=ps[:,4].sigmoid()
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
-                # import pdb;pdb.set_trace()
+                import pdb;pdb.set_trace()
+                Rpbox=torch.cat((pbox,p_theta.reshape(-1,1)*90.),1)
+                Rtbox=torch.cat((tbox[i][:,:4],tbox[i][:,4].reshape(-1,1)*90.),1)
+                skewiou=rbox_skewiou(Rpbox,Rtbox)
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
                 # import pdb;pdb.set_trace()

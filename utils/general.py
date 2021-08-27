@@ -23,6 +23,7 @@ import pkg_resources as pkg
 import torch
 import torchvision
 import yaml
+from detectron2._C import box_iou_rotated
 try:
     from utils.google_utils import gsutil_getsize
     from utils.metrics import fitness
@@ -491,7 +492,16 @@ def clip_coords_rotation(boxes, img_shape):
     boxes[:, 1].clip(0, img_shape[0])  # y1
     boxes[:, 2].clip(0, img_shape[1])  # x2
     boxes[:, 3].clip(0, img_shape[0])  # y2
+def rbox_skewiou(rbox1,rbox2):
+    '''
+    input:rbox1[N,5],rbox2 [N,5]
+    return: skewiou[N,1]
+    '''
+    skewiou=box_iou_rotated(rbox1,rbox2)
 
+    skewiou=torch.diag(skewiou)
+
+    return skewiou
 
 def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7):
     # Returns the IoU of box1 to box2. box1 is 4, box2 is nx4
