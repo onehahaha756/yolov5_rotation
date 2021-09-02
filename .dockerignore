@@ -19,7 +19,7 @@ data/samples/*
 **/*.onnx
 **/*.mlmodel
 **/*.torchscript
-!runs/train/exp392/weights/best.pt
+!runs/train/tzplane_skewiou_loss-v2_/weights/best.pt 
 !runs/submit_pts/best.pt
 
 

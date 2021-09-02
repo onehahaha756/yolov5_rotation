@@ -113,6 +113,10 @@ def LoadDetfile(det_path):
     #import pdb;pdb.set_trace()
     detfile=open(det_path,'rb')
     det_dict = pickle.load(detfile)
+    for imgname in det_dict.keys():
+        det_results=det_dict[imgname]
+        for result in det_results:
+            result=result.append(0)
     
 
     return det_dict
@@ -150,8 +154,16 @@ def voc_ap(rec, prec, use_07_metric=True):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
+def draw_polygon(img,bbox,score,color):
+    import pdb;pdb.set_trace()
+    bbox=bbox.cpu().numpy()
+    x,y,w,h,theta=bbox
+    rect=((x,y),(w,h),theta)
+    bbox=cv2.boxPoints(rect).reshape((-1,1,2)).astype(np.int32)
+    cv2.polylines(img,[bbox],True,color,2)
+    cv2.putText(img,str(score),(int(x-w/2),int(y-h/2)),1,cv2.FONT_HERSHEY_PLAIN,color,1)
 
-def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.5,nms_thre=0.5,use_07_metric=False):
+def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.5,imgdir=None,nms_thre=0.5,use_07_metric=False):
     '''
     this is single class ap caculate code,for 
     annot_dir:txt format annot_dir,txt format is:
@@ -172,7 +184,8 @@ def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.
     classname: classname in txt file
 
     '''
-    # print('conf thres: {} overthresh: {}'.format(conf_thre,ovthresh))
+    # imgdir='/data/03_Datasets/DOTA-v2.0/val/images'
+    print('conf thres: {} overthresh: {}'.format(conf_thre,ovthresh))
     # import pdb;pdb.set_trace()
     gt_dict=LoadTxtGt_polygon(annot_dir,annot_type)
     det_dict=LoadDetfile(det_path)
@@ -211,7 +224,7 @@ def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.
         # dets=nms(dets,nms_thre,conf_thre)
         for det in dets:
             #import pdb;pdb.set_trace()
-            if det[-1]==classname:
+            if det[6]==classname:
                 cls_det.append(([imagename]+det[:]))
     # import pdb;pdb.set_trace()
     if len(cls_det)>1:
@@ -221,21 +234,22 @@ def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.
         '''
 
         imageids=np.array([x[0] for x in cls_det])
-        confidence=np.array([float(x[-2]) for x in cls_det])
-        BBox=np.array([[float(z) for z in x[1:-2]] for x in cls_det])
+        confidence=np.array([float(x[6]) for x in cls_det])
+        BBox=np.array([[float(z) for z in x[1:6]] for x in cls_det])
        
         # rm confidence below confidence threshhold
         select_mask=confidence>conf_thre
         confidence=confidence[select_mask]
         BBox=BBox[select_mask]
         imageids=imageids[select_mask]
-
+        #img_tp=img_tp[select_mask]
         #sort by confidence
         sorted_ind=np.argsort(-confidence)
         sorted_scores=np.sort(confidence)
         BBox=BBox[sorted_ind,:]
         imageids=imageids[sorted_ind]   
-
+        #img_tp=img_tp[sorted_ind]
+        import pdb;pdb.set_trace()
         #mark TPs and FPs
         nd = len(BBox)
         tp = np.zeros(nd)
@@ -253,18 +267,26 @@ def casia_eval(annot_dir,annot_type,det_path,classname,conf_thre=0.3,ovthresh=0.
             except:
                 import pdb;pdb.set_trace()
             #image has no object, so the bbox is false positive
+            import pdb;pdb.set_trace()
+            bb=BBox[d,:].astype(float)
+            #get det dict bbox
+            img_det=det_dict[imgname]
+            img_detboxes=[x[:5] for x in img_det]
+            bbindex=img_detboxes.index(bb.tolist())
+            det_bb=img_detboxes[bbindex]
+
             if len(cls_gtbboxs)==0:
                 fp[d]=1
                 continue
             # import pdb;pdb.set_trace()
 
             BBGT=np.array([bbox[0][:-1] for bbox in cls_gtbboxs])
-            bb=BBox[d,:].astype(float)
+            
             BBGT=torch.from_numpy(BBGT).float()
             bb=torch.from_numpy(bb).float()
             ious, i =box_iou_rotated(BBGT,bb).max(1)
             #if classname==''
-            # import pdb;pdb.set_trace()
+            import pdb;pdb.set_trace()
             #get >iouthre index
             ind=torch.where(ious>ovthresh)
             if not len(ind[0])>0:
@@ -355,9 +377,10 @@ if __name__=='__main__':
     datanames=yaml.load(dataconfig)
     classnames=datanames['names']
     aps=[]
+    # import pdb;pdb.set_trace()
     for clss in classnames:
         rec,prec,ap=casia_eval(args.annot_dir,args.annot_type,args.det_path,  
-                   clss,args.iou_thre,args.conf_thre)
+                   clss,args.conf_thre,args.iou_thre,args.image_dir)
         aps.append([rec,prec,ap])
         print('{:<30} : {:<20}    total pred: {:<20}'.format(clss,ap,len(rec)))
     # import pdb;pdb.set_trace()

@@ -14,8 +14,8 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: /data/03_Datasets/dota_rotationV2/images/train  # 
-val: /data/03_Datasets/dota_rotationV2/images/val  # 
+train: /data/03_Datasets/dota_rotationV2_1024_600/images/train  # 
+val: /data/03_Datasets/dota_rotationV2_1024_600/images/val  # 
 # number of classes
 nc: 18
 
@@ -27,3 +27,8 @@ names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
                'roundabout', 'harbor',
                'swimming-pool', 'helicopter',
                'container-crane','airport','helipad']
+test_images: '/data/03_Datasets/DOTA-v2.0/test-dev/images'
+test_labels: '/data/03_Datasets/DOTA-v2.0/val/labelTxt'
+
+# test_images: '/data/03_Datasets/DOTA-v2.0/val/test_eval/images'
+# test_labels: '/data/03_Datasets/DOTA-v2.0/val/test_eval/labelTxt'

@@ -145,7 +145,9 @@ class ComputeLoss:
                 ltheta*=self.hyp['r_theta']
                 
                 lbox=ltheta+(1-iou)
-                lreg+=(lbox*(1-skewiou)).mean()
+                lbox_l1=lbox.detach()
+                # import pdb;pdb.set_trace()
+                lreg+=((lbox/lbox_l1)*(1-skewiou)).mean()
                 # Objectness
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 

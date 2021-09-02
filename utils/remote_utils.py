@@ -36,16 +36,13 @@ def rboxes2points(pred,CLASSES,score_thr=0):
         object_dict={}
         xc, yc, w, h, ag = bbox.tolist()
         # import pdb;pdb.set_trace()
-        wx, wy = w / 2 * math.cos(ag), w / 2 * math.sin(ag)
-        hx, hy = -h / 2 * math.sin(ag), h / 2 * math.cos(ag)
-        p1 = (xc - wx - hx, yc - wy - hy)
-        p2 = (xc + wx - hx, yc + wy - hy)
-        p3 = (xc + wx + hx, yc + wy + hy)
-        p4 = (xc - wx + hx, yc - wy + hy)
+        bbox_points=cv2.boxPoints(((xc,yc),(w,h),ag))
+        bbox_points=bbox_points.tolist()
         #ps = np.int0(np.array([p1, p2, p3, p4]))
+        # import pdb;pdb.set_trace()
         label_text=CLASSES[int(label)]
         object_dict['category_id']=label_text
-        object_dict['points']=[[float(x[0]),float(x[1])] for x in [p1,p2,p3,p4]]
+        object_dict['points']=[[float(x[0]),float(x[1])] for x in bbox_points]
         object_dict['confidence']=float(score)
         results_list.append(object_dict)
     return results_list
