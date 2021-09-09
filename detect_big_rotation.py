@@ -20,7 +20,7 @@ from utils.plots import colors, plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
 from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet,draw_clsdet_rotation,rboxes2points
 from utils.eval_rotation import casia_eval
-
+import gdal 
 from detectron2.layers import nms_rotated
 multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
 # multi_img_type=['*PAN.tif']# remote origin image
@@ -63,7 +63,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
     # Directories
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
     (save_dir / 'labels' if save_pkl else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
-    
+    print('conf thres : {} \nnms iou thres:  {}'.format(conf_thres,iou_thres))
     # Initialize
     set_logging()
     device = select_device(device)
@@ -87,21 +87,18 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
         os.mkdir(vis_dir)
     det_results={}
     save_results=[]
-    # import pdb;pdb.set_trace()
+
     for i,imgpath in enumerate(imglist):
-        
+
         ts=time.time()
         p = Path(imgpath)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
-
-        ori_img=cv2.imread(imgpath)
-        H,W,C=ori_img.shape
-        # print(f'{i}/{len(imglist)} processing {imgpath} shape: {(H,W,C)}')
-        H_pad=math.ceil(H/32.)*32 
-        W_pad=math.ceil(W/32.)*32 
-        pad_img=np.zeros((H_pad,W_pad,3))
-        pad_img[:H,:W,:]=ori_img
-        # print(f'{i}/{len(imglist)}  {imgpath} shape: {(H,W,C)} ,resized img {(H_pad,W_pad,3)}')
+        try:
+            ori_img=cv2.imread(imgpath)
+            H,W,C=ori_img.shape
+        except:
+            print('error')
+            continue
         step_h,step_w=(imgsz-overlap),(imgsz-overlap)
 
         ori_preds=torch.empty((0,7)).cuda()
@@ -109,11 +106,11 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
             for y_shift in range(0,H,step_h):
                 y_boader,x_boader=min(imgsz,H-y_shift),min(imgsz,W-x_shift)
                 img=np.zeros((imgsz,imgsz,3))
+                #print('{}/{}...'.format(x_shift//step_w,W//step_w))
                 try:
                     img[:y_boader,:x_boader,:]=ori_img[y_shift:y_shift+y_boader,x_shift:x_shift+x_boader,:]
                 except:
-                    import pdb;pdb.set_trace()
-                
+                    continue
                 img=img.transpose(2,0,1)
                 img = torch.from_numpy(img).to(device)
 
@@ -121,34 +118,33 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 img /= 255.0  # 0 - 255 to 0.0 - 1.0
                 if img.ndimension() == 3:
                     img = img.unsqueeze(0)
-                # import pdb;pdb.set_trace()
+
                 # Inference
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
-                # import pdb;pdb.set_trace()
+
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-                # import pdb;pdb.set_trace()
+
                 #1 batch
                 pred=pred[0]
                 pred[:,0]+=x_shift
                 pred[:,1]+=y_shift
                 ori_preds=torch.cat((ori_preds,pred),0)
-                # import pdb;pdb.set_trace()
+
         if len(ori_preds)>0:
-            #import pdb;pdb.set_trace()
+
             #nms by class shift
             before_nms=len(ori_preds)
             bbox_xy=ori_preds[:,:2]+imgsz*ori_preds[:,-1].reshape(-1,1)
             bboxes=torch.cat((bbox_xy,ori_preds[:,2:5]),1)
             scores=ori_preds[:,5]
             nms_index=nms_rotated(bboxes,scores,iou_thres)
+            # import pdb;pdb.set_trace()
             ori_preds=ori_preds[nms_index]
             end_nms=len(ori_preds)
             print(f'nms {before_nms-end_nms} bboxes')
             pred=[pd.cpu().numpy().tolist() for pd in ori_preds]
-            # import pdb;pdb.set_trace()
-            
-            # import pdb;pdb.set_trace()
+
             p = Path(imgpath)
             print(f'detected {len(pred)} objects!')
             if save_json:
@@ -162,7 +158,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 show_img=ori_img.copy()
                 show_img2=draw_clsdet_rotation(show_img,pred,clssname,conf_thres) 
                 # import pdb;pdb.set_trace()
-                save_path = osp.join(vis_dir,'{}.png'.format(basename))  
+                save_path = osp.join(vis_dir,'{}.jpg'.format(basename))  
                 cv2.imwrite(save_path,show_img2)  
                 print(f'{save_path} saved!')
             pred=[pd[:-1]+[clssname[int(pd[-1])]] for pd in pred]
@@ -198,12 +194,12 @@ def eval_remote(test_images,annot_dir,annot_type,det_path,clssname,iou_thre,conf
     nc=len(classnames)
     for clss in clssname:
         try:
-            rec,prec,ap=casia_eval(annot_dir,annot_type,det_path, clss,conf_thre,iou_thre)
-            print('{:<20} : {:<20}    total pred: {:<20}'.format(clss,ap,len(rec)))
-            save_file.write('{:<20} : {:<20}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
+            rec,prec,ap=casia_eval(annot_dir,annot_type,det_path, clss,conf_thre)
+            print('{:<20} : {:<20.5}    total pred: {:<20}'.format(clss,ap,len(rec)))
+            save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
             plt.plot(rec,prec,label=clss)
             save_fig_path=osp.join(det_dir,'{}_AP.png'.format(clss))
-            plt.text(0.1,1.0,'iou thre:{} conf_thre: {} ap: {:.6f}'.format(iou_thre,conf_thre,ap))
+            plt.text(0.1,1.0,'nms iou thre:{} conf_thre: {} ap: {:.6f}'.format(iou_thre,conf_thre,ap))
             plt.savefig(save_fig_path)
             plt.clf()
             map+=ap/float(nc)
@@ -211,8 +207,8 @@ def eval_remote(test_images,annot_dir,annot_type,det_path,clssname,iou_thre,conf
             save_file.write('{} erro \n'.format(clss))
             
             pass
-    print('map : {:<20}'.format(map))
-    save_file.write('map : {:<20}'.format(map))
+    print('map : {:<20.5}'.format(map))
+    save_file.write('map : {:<20.5}'.format(map))
     
     save_file.close()
    
@@ -243,7 +239,7 @@ def save_det2dota(det_path):
             bbox_points=[max(0,x) for x in bbox_points]
             x1,y1,x2,y2,x3,y3,x4,y4=bbox_points
             
-            save_path=osp.join(submit_dir,'Task2_{}.txt'.format(classname))
+            save_path=osp.join(submit_dir,'Task1_{}.txt'.format(classname))
             if osp.exists(save_path):
                 f=open(save_path,'a',encoding='utf-8')
             else:

@@ -3,7 +3,7 @@
 # See tutorials for hyperparameter evolution https://github.com/ultralytics/yolov5#tutorials
 
 
-lr0: 0.01  # initial learning rate (SGD=1E-2, Adam=1E-3)
+lr0: 0.001  # initial learning rate (SGD=1E-2, Adam=1E-3)
 lrf: 0.2  # final OneCycleLR learning rate (lr0 * lrf)
 momentum: 0.937  # SGD momentum/Adam beta1
 weight_decay: 0.0005  # optimizer weight decay 5e-4
@@ -30,5 +30,5 @@ shear: 0.0  # image shear (+/- deg)
 perspective: 0.0  # image perspective (+/- fraction), range 0-0.001
 flipud: 0.5  # image flip up-down (probability)
 fliplr: 0.5  # image flip left-right (probability)
-mosaic: 1.0  # image mosaic (probability)
+mosaic: 0.0  # image mosaic (probability)
 mixup: 0.0  # image mixup (probability)

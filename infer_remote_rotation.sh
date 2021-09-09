@@ -1,13 +1,14 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_big_rotation.py \
---weights runs/train/dotav2_skewiou_loss-v2_/weights/best.pt  \
---dataset data/dotav2.yaml \
---project runs/dotav2 \
+--weights runs/train/seaship39/weights/last.pt  \
+--dataset data/seaship_rotation.yaml \
+--project runs/detect/rotation_ship \
 --conf 0.01 \
 --iou 0.5 \
 --imgsz 4096 \
---overlap 1024 \
+--overlap 0 \
 --remote \
-#--eval runs/dotav2/exp56/results.pkl \
+--nosave \
+#--eval runs/dotav2/exp69/results.pkl \
 #--source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
 #--annot_dir /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt 
 #--nosave \
