@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_rotation.py \
---weights runs/train/exp341/weights/best.pt  \
+--weights runs/train/seaship_SkewiouLoss/yolov5s_seaship_augment_skewiou_loss-v2-640-300-03.3-/weights/best.pt  \
 --conf 0.3 \
 --iou 0.05 \
 --imgsz 4096 \
