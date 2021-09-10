@@ -1,6 +1,7 @@
 
 ## 基于yolov5的旋转框目标检测
 课题需要，需要做旋转目标检测，因此尝试了基于Yolov5的旋转目标检测。
+
 ### 修改的地方
 1. 数据表示方式
 - 飞机检测或舰船检测，原始数据集格式为Dota标注格式:
@@ -62,6 +63,16 @@ dotav2数据集
 
 ![image](https://user-images.githubusercontent.com/49705914/128320551-6e9ddbdd-70bf-4ab2-a0db-4c365853240d.png)
 ![image](https://user-images.githubusercontent.com/49705914/128320616-c4b394d4-45cf-4ed8-acd1-e043bf02b034.png)
+
+
+###
+分支说明：
+- master分支: 修改如上所述，模型方面修改了Detect模块，角度回归方式采用smoothl1
+- dcn-yolov5-rotation:引入DCN，尝试适应多尺度问题，开发中
+- develop:修改loss函数，参考：scrdet
+### 代码说明
+该代码是由于自己的课题需要修改的，主要用于学习交流。同时我也还在学习和开发中，因此代码可能并没有很好的整理，如果大家对这份代码感兴趣或者有使用问题欢迎大家跟我交流~
+
 
 
 
