@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_big_rotation.py \
---weights runs/train/seaship_SkewiouLoss/yolov5s_seaship_augment_skewiou_loss-v2-640-300-04.3-/weights/last.pt  \
+--weights runs/train/SeashipsV2/yolov5s_seaship_augment_l1_loss-v2-640-300-ratio02.3-/weights/best.pt  \
 --dataset data/seaship_rotation.yaml \
 --project runs/detect/rotation_ship \
 --conf 0.01 \
