@@ -147,7 +147,7 @@ class ComputeLoss:
                 lbox=ltheta+(1-iou)
                 lbox_l1=lbox.detach()
                 # import pdb;pdb.set_trace()
-                lreg+=((lbox/lbox_l1)*(1-skewiou)).mean()
+                lreg+=((lbox/lbox_l1)*(1-skewiou+1e-18)).mean()
                 # Objectness
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 
@@ -156,10 +156,6 @@ class ComputeLoss:
                     t = torch.full_like(ps[:, 6:], self.cn, device=device)  # targets
                     t[range(n), tcls[i]] = self.cp
                     lcls += self.BCEcls(ps[:, 6:], t)  # BCE
-
-                # Append targets to text file
-                # with open('targets.txt', 'a') as file:
-                #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
 
             obji = self.BCEobj(pi[..., 5], tobj)
             lobj += obji * self.balance[i]  # obj loss
