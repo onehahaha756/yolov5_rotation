@@ -14,8 +14,8 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.3/images/train/  # 
-val: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.3/images/val/  # 
+train: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/train/  # 
+val: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/val/  # 
 # number of classes
 nc: 1
 
