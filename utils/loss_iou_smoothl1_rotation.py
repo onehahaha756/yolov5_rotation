@@ -138,7 +138,7 @@ class ComputeIouSmoothL1Loss:
                 Rpbox=torch.cat((pbox,p_theta.reshape(-1,1)*90.),1)
                 Rtbox=torch.cat((tbox[i][:,:4],tbox[i][:,4].reshape(-1,1)*90.),1)
                 skewiou=rbox_skewiou(Rpbox,Rtbox)
-                iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
+                iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False)  # iou(prediction, target)
                 
                 # import pdb;pdb.set_trace()
                 ltheta =self.theta_lossfn(p_theta,tbox[i][:,4])

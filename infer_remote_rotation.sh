@@ -7,7 +7,7 @@ CUDA_VISIBLE_DEVICES=1 python3 detect_big_rotation.py \
 --imgsz 4096 \
 --overlap 0 \
 --remote \
---nosave \
+
 #--eval runs/dotav2/exp69/results.pkl \
 #--source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
 #--annot_dir /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt 
