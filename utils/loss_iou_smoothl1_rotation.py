@@ -3,9 +3,9 @@
 import torch
 import torch.nn as nn
 
-from utils.general import bbox_iou
+from utils.general import bbox_iou,rbox_skewiou
 from utils.torch_utils import is_parallel
-
+from detectron2._C import box_iou_rotated
 
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
@@ -86,17 +86,17 @@ class QFocalLoss(nn.Module):
             return loss
 
 
-class ComputeLoss:
+class ComputeIouSmoothL1Loss:
     # Compute losses
     def __init__(self, model, autobalance=False):
-        super(ComputeLoss, self).__init__()
+        super(ComputeIouSmoothL1Loss, self).__init__()
         device = next(model.parameters()).device  # get model device
         h = model.hyp  # hyperparameters
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
-        smooth_theta=nn.SmoothL1Loss()
+        smooth_theta=nn.SmoothL1Loss(reduction='none')
         BCEtheta=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))
         self.theta_lossfn=smooth_theta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
@@ -117,7 +117,7 @@ class ComputeLoss:
         # import pdb;pdb.set_trace()
     def __call__(self, p, targets):  # predictions, targets, model
         device = targets.device
-        lcls, lbox, ltheta, lobj = torch.zeros(1, device=device),torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
+        lcls, lbox, ltheta, lobj ,lreg= torch.zeros(1, device=device),torch.zeros(1, device=device),torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
 
         # Losses
@@ -135,10 +135,19 @@ class ComputeLoss:
                 p_theta=ps[:,4].sigmoid()
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 # import pdb;pdb.set_trace()
+                Rpbox=torch.cat((pbox,p_theta.reshape(-1,1)*90.),1)
+                Rtbox=torch.cat((tbox[i][:,:4],tbox[i][:,4].reshape(-1,1)*90.),1)
+                skewiou=rbox_skewiou(Rpbox,Rtbox)
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
-                lbox += (1.0 - iou).mean()  # iou loss
+                
                 # import pdb;pdb.set_trace()
-                ltheta+=self.theta_lossfn(p_theta,tbox[i][:,4])
+                ltheta =self.theta_lossfn(p_theta,tbox[i][:,4])
+                ltheta*=self.hyp['r_theta']
+                
+                lbox=ltheta+(1-iou)
+                lbox_l1=lbox.detach()
+                # import pdb;pdb.set_trace()
+                lreg+=((lbox/lbox_l1)*(1-skewiou+1e-18)).mean()
                 # Objectness
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 
@@ -148,10 +157,6 @@ class ComputeLoss:
                     t[range(n), tcls[i]] = self.cp
                     lcls += self.BCEcls(ps[:, 6:], t)  # BCE
 
-                # Append targets to text file
-                # with open('targets.txt', 'a') as file:
-                #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
-
             obji = self.BCEobj(pi[..., 5], tobj)
             lobj += obji * self.balance[i]  # obj loss
             if self.autobalance:
@@ -159,14 +164,13 @@ class ComputeLoss:
 
         if self.autobalance:
             self.balance = [x / self.balance[self.ssi] for x in self.balance]
-        lbox *= self.hyp['box']
+        lreg *= self.hyp['box']
         lobj *= self.hyp['obj']
         lcls *= self.hyp['cls']
-        ltheta*=self.hyp['r_theta']
         bs = tobj.shape[0]  # batch size
-
-        loss = lbox + lobj + lcls+ltheta
-        return loss * bs, torch.cat((lbox, lobj,lcls, ltheta, loss)).detach()
+        # import pdb;pdb.set_trace()
+        loss = lreg + lobj + lcls
+        return loss * bs, torch.cat((lreg, lobj,lcls, ltheta.mean().reshape(1), loss)).detach()
 
     def build_targets(self, p, targets):
         # import pdb;pdb.set_trace()
@@ -183,9 +187,11 @@ class ComputeLoss:
                             [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m
                             # [1, 1], [1, -1], [-1, 1], [-1, -1],  # jk,jm,lk,lm
                             ], device=targets.device).float() * g  # offsets
+        # print(self.anchors)
         # import pdb;pdb.set_trace()
         for i in range(self.nl):
             anchors = self.anchors[i]
+            
             gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
             # import pdb;pdb.set_trace()
             # Match targets to anchors

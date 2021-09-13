@@ -32,3 +32,4 @@ flipud: 0.5  # image flip up-down (probability)
 fliplr: 0.5  # image flip left-right (probability)
 mosaic: 0.0  # image mosaic (probability)
 mixup: 0.0  # image mixup (probability)
+iou_smooth_l1: 0 #use iou-smooth-l1 loss ,reference R3det

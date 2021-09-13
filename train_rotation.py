@@ -32,6 +32,7 @@ from utils.general import labels_to_class_weights, increment_path, labels_to_ima
     check_requirements, print_mutation, set_logging, one_cycle, colorstr
 from utils.google_utils import attempt_download
 from utils.loss_rotation import ComputeLoss
+from utils.loss_iou_smoothl1_rotation import ComputeIouSmoothL1Loss
 from utils.plots import plot_images, plot_labels, plot_results, plot_evolution,plot_images_rotation
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first, de_parallel
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
