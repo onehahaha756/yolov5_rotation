@@ -22,5 +22,5 @@ nc: 1
 # class names
 names: [ 'ship' ]
 
-test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/train_seaship/images'
-test_labels: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/train_seaship/labelTxt'
+test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images'
+test_labels: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt'
