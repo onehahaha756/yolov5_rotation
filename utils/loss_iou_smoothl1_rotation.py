@@ -90,9 +90,10 @@ class ComputeIouSmoothL1Loss:
     # Compute losses
     def __init__(self, model, autobalance=False):
         super(ComputeIouSmoothL1Loss, self).__init__()
+        print('useing iou-smooth-l1 loss')
         device = next(model.parameters()).device  # get model device
         h = model.hyp  # hyperparameters
-
+        
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
