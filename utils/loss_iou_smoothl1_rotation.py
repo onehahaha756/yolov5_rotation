@@ -146,9 +146,10 @@ class ComputeIouSmoothL1Loss:
                 ltheta*=self.hyp['r_theta']
                 
                 lbox=ltheta+(1-iou)
-                lbox_l1=lbox.detach()
+                lbox_l1=lbox.detach()+1e-18
                 # import pdb;pdb.set_trace()
                 lreg+=((lbox/lbox_l1)*(1-skewiou+1e-18)).mean()
+                
                 # Objectness
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 

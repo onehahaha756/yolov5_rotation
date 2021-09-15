@@ -1054,9 +1054,7 @@ def box_candidates_rotation(box1, box2, width,height,wh_thr=2, ar_thr=20, area_t
     # import pdb;pdb.set_trace()
     ar = np.maximum(w2 / (h2 + eps), h2 / (w2 + eps))  # aspect ratio
     xmin,ymin,xmax,ymax=box2[:]
-    xc=(xmin+xmax)/2
-    yc=(ymin+ymax)/2
-    save_box=(xc<width) & (xc >0) & (yc<height) & (yc>0)
+    save_box=(xmax<=width) & (xmin >=0) & (ymax<=height) & (ymin>=0)
     return save_box & (w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + eps) > area_thr) & (ar < ar_thr)  # candidates
 
 def cutout(image, labels):
