@@ -173,12 +173,12 @@ def plot_images_rotation(images, targets, paths=None, fname='images.jpg', names=
             labels = image_targets.shape[1] == 7  # labels if no conf column
             conf = None if labels else image_targets[:, 6]  # check for confidence presence (label vs pred)
             # import pdb;pdb.set_trace()
-            if boxes.shape[1]:
-                if boxes.max() <= 1.01:  # if normalized with tolerance 0.01
-                    boxes[[0, 2]] *= w  # scale to pixels
-                    boxes[[1, 3]] *= h
-                elif scale_factor < 1:  # absolute coords need scale if image scales
-                    boxes *= scale_factor
+            # if boxes.shape[1]:
+            #     if boxes.max() <= 1.01:  # if normalized with tolerance 0.01
+            #         boxes[[0, 2]] *= w  # scale to pixels
+            #         boxes[[1, 3]] *= h
+            #     elif scale_factor < 1:  # absolute coords need scale if image scales
+            #         boxes *= scale_factor
             boxes[[0, 2,4,6]] += block_x
             boxes[[1, 3,5,7]] += block_y
             for j, box in enumerate(boxes.T):
