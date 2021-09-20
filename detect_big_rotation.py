@@ -18,37 +18,28 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path, save_one_box
 from utils.plots import colors, plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
-from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet,draw_clsdet_rotation,rboxes2points
+from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet,draw_clsdet_rotation,rboxes2points,get_grid_listV2
 from utils.eval_rotation import casia_eval
-import gdal 
 from detectron2.layers import nms_rotated
-multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
-# multi_img_type=['*PAN.tif']# remote origin image
-#def work_dirs(data_dir):
-import math
-CLASSES=['A','B','C','D','E','F','G','H','I','J','K']
-CLASSES=['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
-               'small-vehicle', 'large-vehicle', 'ship',
-               'tennis-court', 'basketball-court',
-               'storage-tank', 'soccer-ball-field',
-               'roundabout', 'harbor',
-               'swimming-pool', 'helicopter',
-               'container-crane','airport','helipad']
-CLASSES=['ship']
+from DOTA_devkit.dota_evaluation_task1 import voc_eval
 
-#def 
+multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
+
+import math
+
+
 @torch.no_grad()
 def detect(weights='yolov5s.pt',  # model.pt path(s)
            source='data/images',  # file/dir/URL/glob, 0 for webcam
            clssname='',
-           imgsz=640,  # inference size (pixels)
+           max_cropsize=640,  # inference size (pixels)
            overlap=200,# cut subimage overlap for remote images
            conf_thres=0.01,  # confidence threshold
            iou_thres=0.45,  # NMS IOU threshold
            nosave=False,  # do not save images/videos
            project='runs/detect',  # save results to project/name
            name='exp',  # save results to project/name
-           max_det=1000,  # maximum detections per image
+           max_det=2000,  # maximum detections per image
            remote=True, #infer remote big
            device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
            save_pkl=False,  # save results to *.txt
@@ -73,40 +64,46 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
     print('weight path: ',weights)
     model = attempt_load(weights, map_location=device)  # load FP32 model
     stride = int(model.stride.max())  # model stride
-    imgsz = check_img_size(imgsz, s=stride)  # check image size
+    max_cropsize = check_img_size(max_cropsize, s=stride)  # check image size
     if remote:
         imglist=[]
         for img_type in multi_img_type:
             imglist+=glob.glob(os.path.join(source,img_type))
     # Run inference
     if device.type != 'cpu':
-        model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+        model(torch.zeros(1, 3, max_cropsize, max_cropsize).to(device).type_as(next(model.parameters())))  # run once
     t0 = time.time()
     vis_dir=osp.join(save_dir,'vis_results')
     if not osp.exists(vis_dir):
         os.mkdir(vis_dir)
     det_results={}
     save_results=[]
-
+    
     for i,imgpath in enumerate(imglist):
-
+        # 
         ts=time.time()
         p = Path(imgpath)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
         try:
             ori_img=cv2.imread(imgpath)
             H,W,C=ori_img.shape
+            H_pad=check_img_size(H,s=stride)
+            W_pad=check_img_size(W,s=stride)
         except:
             print('error')
             continue
-        step_h,step_w=(imgsz-overlap),(imgsz-overlap)
 
+        imgsz=min(max_cropsize,max(H_pad,W_pad))
+        
+        rows=math.ceil((H-overlap)/(imgsz-overlap))
+        cols=math.ceil((W-overlap)/(imgsz-overlap))
+        print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)},imgsz: {imgsz} rows: {rows},cols: {cols} ')
         ori_preds=torch.empty((0,7)).cuda()
-        for x_shift in range(0,W,step_w):
-            for y_shift in range(0,H,step_h):
+        for row in range(rows):
+            for col in range(cols):
+                x_shift,y_shift=col*imgsz,row*imgsz
                 y_boader,x_boader=min(imgsz,H-y_shift),min(imgsz,W-x_shift)
                 img=np.zeros((imgsz,imgsz,3))
-                #print('{}/{}...'.format(x_shift//step_w,W//step_w))
                 try:
                     img[:y_boader,:x_boader,:]=ori_img[y_shift:y_shift+y_boader,x_shift:x_shift+x_boader,:]
                 except:
@@ -122,7 +119,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 # Inference
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
-
+                # import pdb;pdb.set_trace()
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
                 #1 batch
@@ -130,14 +127,17 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 pred[:,0]+=x_shift
                 pred[:,1]+=y_shift
                 ori_preds=torch.cat((ori_preds,pred),0)
-
+        print(f'end as:{y_shift+y_boader},{x_shift+x_boader},time:{time.time()-ts:.3f}')
         if len(ori_preds)>0:
-
+            # import pdb;pdb.set_trace()
             #nms by class shift
             before_nms=len(ori_preds)
             bbox_xy=ori_preds[:,:2]+imgsz*ori_preds[:,-1].reshape(-1,1)
             bboxes=torch.cat((bbox_xy,ori_preds[:,2:5]),1)
             scores=ori_preds[:,5]
+            #MAX_nms=10
+            #spilt nms,because too many bboxes that result in cuda memory error
+            # import pdb;pdb.set_trace()
             nms_index=nms_rotated(bboxes,scores,iou_thres)
             # import pdb;pdb.set_trace()
             ori_preds=ori_preds[nms_index]
@@ -163,7 +163,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 print(f'{save_path} saved!')
             pred=[pd[:-1]+[clssname[int(pd[-1])]] for pd in pred]
             det_results[basename]=pred
-        print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)} ({time.time()-ts:.3f}s ETA: {(time.time()-ts)*(len(imglist)-i):.3f}s)')
+        #print(f'({time.time()-ts:.3f}s ETA: {(time.time()-ts)*(len(imglist)-i):.3f}s)')
 
     det_file=os.path.join(save_dir,'results.pkl')
     if save_json!=None:
@@ -177,12 +177,14 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
     print(f'Done. ({time.time() - t0:.3f}s)')
     return det_file
 
-def eval_remote(test_images,annot_dir,annot_type,det_path,clssname,iou_thre,conf_thre,opt):
-
+def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,conf_thre,opt):
+    '''
+    use DOTA_devkit tools to eval results
+    
+    '''
     det_dir=os.path.dirname(det_path)
     results_path=osp.join(det_dir,'results.txt')
-    #save_ap_fig=osp.join(det_dir,'AP.png')
-    # import pdb;pdb.set_trace()
+    
     save_file=open(results_path,'w',encoding='utf-8')
     save_file.write('imgsource: {}\nweights: {}\n'.format(test_images,opt.weights))
     save_file.write('iou overthre:{}\nConfidence thre:{}\n'.format(iou_thre,conf_thre))
@@ -192,9 +194,16 @@ def eval_remote(test_images,annot_dir,annot_type,det_path,clssname,iou_thre,conf
     plt.xlabel('recall');plt.ylabel('presicion')
     map=0.0
     nc=len(classnames)
+    
+
+
+    # import pdb;pdb.set_trace()
+    submit_path=osp.join(det_dir,'submit','Task1_{:s}.txt')
+    annot_path=osp.join(annot_dir,'{:s}.txt')
+
     for clss in clssname:
         try:
-            rec,prec,ap=casia_eval(annot_dir,annot_type,det_path, clss,conf_thre)
+            rec,prec,ap=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.5,use_07_metric=True)
             print('{:<20} : {:<20.5}    total pred: {:<20}'.format(clss,ap,len(rec)))
             save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
             plt.plot(rec,prec,label=clss)
@@ -257,7 +266,7 @@ if __name__ == '__main__':
     parser.add_argument('--overlap', type=int, default=100, help='sub image overlap size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='NMS IoU threshold')
-    parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
+    parser.add_argument('--max-det', type=int, default=2000, help='maximum detections per image')
     parser.add_argument('--remote', action='store_true', help='inference big remote images')    
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='show results')
@@ -287,14 +296,17 @@ if __name__ == '__main__':
 
     test_images=dataset['test_images']
     test_labels=dataset['test_labels']
+    test_imagefile=dataset['test_imgfile']
     clssname=dataset['names']
     # import pdb;pdb.set_trace()
+    start_time=time.time()
     if not opt.eval:
         det_path=detect(opt.weights,test_images,clssname,opt.imgsz,opt.overlap,
                     opt.conf_thres,opt.iou_thres,opt.nosave,opt.project,opt.name)
     else:
         det_path= opt.eval
     save_det2dota(det_path)
+    print('total time: {}s'.format(time.time()-start_time))
     #imglist=glob.glob(os.path.join(opt.source,'*.jpg'))
     # import pdb;pdb.set_trace()
-    eval_remote(test_images,test_labels,'polygon',det_path,clssname,opt.iou_thres,opt.conf_thres,opt)
+    eval_remote(test_imagefile,test_labels,'polygon',det_path,clssname,opt.iou_thres,opt.conf_thres,opt)
