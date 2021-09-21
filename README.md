@@ -56,6 +56,12 @@ dotav2数据集
 - 飞机11类mAP  0.82左右
 
 ![image](https://user-images.githubusercontent.com/49705914/128284942-27fe2008-83eb-47c2-8754-204cef5e60ad.png)
+
+- dota数据集
+![image](https://user-images.githubusercontent.com/49705914/134128890-24dd21ca-1093-4f06-bef9-8a51314955f3.png)
+![image](https://user-images.githubusercontent.com/49705914/134128980-6df7dfcf-a743-4e40-8195-1af6971c4ee8.png)
+
+
 ### utils
 1. 锚框匹配可视化 
 - utils/vis_match_anchors.py 
