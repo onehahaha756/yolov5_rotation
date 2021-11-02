@@ -2,16 +2,16 @@
 # python train.py --batch 40 --cfg yolov5m.yaml --weights '' --data coco.yaml --img 640 --epochs 300
 # See tutorials for hyperparameter evolution https://github.com/ultralytics/yolov5#tutorials
 
-
-lr0: 0.001  # initial learning rate (SGD=1E-2, Adam=1E-3)
+lr0: 0.01  # initial learning rate (SGD=1E-2, Adam=1E-3)
 lrf: 0.2  # final OneCycleLR learning rate (lr0 * lrf)
 momentum: 0.937  # SGD momentum/Adam beta1
 weight_decay: 0.0005  # optimizer weight decay 5e-4
-warmup_epochs: 20.0  # warmup epochs (fractions ok)
+warmup_epochs: 10.0  # warmup epochs (fractions ok)
 warmup_momentum: 0.8  # warmup initial momentum
 warmup_bias_lr: 0.1  # warmup initial bias lr
 box: 0.05  # regression box loss gain
 r_theta: 1. # box rotation ratio compare x,y,w,h,gain
+patch_cls: 0.01 # patch class positive
 cls: 0.5  # cls loss gain
 cls_pw: 1.0  # cls BCELoss positive_weight
 obj: 1.0  # obj loss gain (scale with pixels)
@@ -32,4 +32,5 @@ flipud: 0.5  # image flip up-down (probability)
 fliplr: 0.5  # image flip left-right (probability)
 mosaic: 0.0  # image mosaic (probability)
 mixup: 0.0  # image mixup (probability)
-iou_smooth_l1: 1.0 #use iou-smooth-l1 loss ,reference R3det
+iou_smooth_l1: 0.0 #use iou-smooth-l1 loss ,reference R3det
+

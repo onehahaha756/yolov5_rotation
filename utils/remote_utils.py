@@ -1,8 +1,8 @@
 #coding:utf-8
 import numpy as np
 import cv2
-import math
-
+import math,random
+#colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
 def crop_xyxy2ori_xyxy(pred,x_shift,y_shift):
     ori_pred=[]
     for det in pred:
@@ -46,7 +46,7 @@ def rboxes2points(pred,CLASSES,score_thr=0):
         object_dict['confidence']=float(score)
         results_list.append(object_dict)
     return results_list
-def draw_clsdet_rotation(img,cls_dets,cls,vis_thresh=0.001):
+def draw_clsdet_rotation(img,cls_dets,cls,colors,vis_thresh=0.5):
     img2=img.copy()
 
     for i in range(len(cls_dets)):
@@ -60,9 +60,9 @@ def draw_clsdet_rotation(img,cls_dets,cls,vis_thresh=0.001):
         # import pdb;pdb.set_trace()
         bbox=cv2.boxPoints(rect).reshape((-1,1,2)).astype(np.int32)
         if score>vis_thresh:
-            cv2.polylines(img2,[bbox],True,(0,255,0),5)
+            cv2.polylines(img2,[bbox],True,colors[int(cls_dets[i][-1])],2)
             put_text='{} {:.3f}'.format(label,score)
-            cv2.putText(img2,put_text,(int(x-w/2),int(y-h/2)),1,cv2.FONT_HERSHEY_PLAIN,(0,255,0),1)
+            cv2.putText(img2,put_text,(int(x-w/2),int(y-h/2)),1,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)
     return img2
 
 def draw_clsdet(img,cls_dets,vis_thresh):
@@ -112,7 +112,28 @@ def iou(box1,box2,utype=0):
     if utype == 2:
         return i_size/float(size2)
     return i_size/float(size1+size2-i_size)
+def get_grid_listV2(imgshape=(1024,1024), roi_size=(400, 400), overlap_size=(50, 50)):
+    ''' Calculate the bounding edges of cropping grids
+   
+    '''
+    img_h, img_w = imgshape
+    row_crops = math.ceil((img_h - overlap_size[1]) / (roi_size[1] - overlap_size[1]))
+    col_crops = math.ceil((img_w - overlap_size[0]) / (roi_size[0] - overlap_size[0]))
 
+    grid_list = [] # ymin, ymax, xmin, xmax
+    for i_iter in range(row_crops * col_crops):
+
+        x_crop_idx = i_iter % col_crops   #行
+        y_crop_idx = i_iter//col_crops
+
+        xmin=x_crop_idx*(roi_size[0]-overlap_size[0])
+        ymin=y_crop_idx*(roi_size[1]-overlap_size[1])
+        xmax=xmin+roi_size[0]
+        ymax=ymin+roi_size[1]
+
+        grid_list.append((xmin,xmax,ymin,ymax))
+
+    return grid_list
 def nms(predictions,iou_thre,conf_thre):
     '''
     input:

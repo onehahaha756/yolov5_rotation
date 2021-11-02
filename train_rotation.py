@@ -38,8 +38,8 @@ from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_di
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 
 logger = logging.getLogger(__name__)
-#--------------bug---------------#
 
+#--------------bug---------------#
 # import torch
 # torch.backends.cudnn.enabled = False
 # torch.backends.cuda.matmul.allow_tf32 = True
@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 # torch.backends.cudnn.deterministic = False
 # torch.backends.cudnn.allow_tf32 = True
 #--------------------------------#
+
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 # import pdb;pdb.set_trace()
 def train(hyp, opt, device, tb_writer=None):
@@ -71,7 +72,7 @@ def train(hyp, opt, device, tb_writer=None):
     # Configure
     plots = not opt.evolve  # create plots
     plots=False
-    # import pdb;pdb.set_trace()
+
     cuda = device.type != 'cpu'
     init_seeds(2 + rank)
     with open(opt.data) as f:
@@ -255,7 +256,7 @@ def train(hyp, opt, device, tb_writer=None):
     results = (0, 0, 0, 0, 0, 0, 0)  # P, R, mAP@.5, mAP@.5-.95, val_loss(box, obj, cls)
     scheduler.last_epoch = start_epoch - 1  # do not move
     scaler = amp.GradScaler(enabled=cuda)
-    # import pdb;pdb.set_trace()
+
     if hyp['iou_smooth_l1']:
         compute_loss=ComputeIouSmoothL1Loss(model)
     else:
@@ -296,7 +297,7 @@ def train(hyp, opt, device, tb_writer=None):
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
-            # import pdb;pdb.set_trace()
+
             # Warmup
             if ni <= nw:
                 xi = [0, nw]  # x interp
@@ -319,7 +320,7 @@ def train(hyp, opt, device, tb_writer=None):
             # Forward
             with amp.autocast(enabled=cuda):
                 pred = model(imgs)  # forward
-                # import pdb;pdb.set_trace()
+
                 loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
@@ -347,8 +348,8 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Plot
                 if True and ni < 20:
+
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
-                    # import pdb;pdb.set_trace()
                     plot_images_rotation(imgs, targets, paths, f)
                     Thread(target=plot_images_rotation, args=(imgs, targets, paths, f), daemon=True).start()
                     # if tb_writer and ni == 0:
@@ -371,7 +372,7 @@ def train(hyp, opt, device, tb_writer=None):
             # mAP
             ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'gr', 'names', 'stride', 'class_weights'])
             final_epoch = epoch + 1 == epochs
-            if not opt.notest or final_epoch:  # Calculate mAP
+            if (not opt.notest and (epoch+1)%opt.test_frequce ==0) or final_epoch:  # Calculate mAP
                 wandb_logger.current_epoch = epoch + 1
                 results, maps, _ = test.test(data_dict,
                                              batch_size=batch_size * 2,
@@ -390,12 +391,12 @@ def train(hyp, opt, device, tb_writer=None):
             with open(results_file, 'a') as f:
                 f.write(s + '%10.4g' * 7 % results + '\n')  # append metrics, val_loss
 
-            # import pdb;pdb.set_trace()
             # Log
             tags = ['train/box_loss', 'train/obj_loss', 'train/cls_loss', 'train/theta_loss', # train loss
                     'metrics/precision', 'metrics/recall', 'metrics/mAP_0.5', 'metrics/mAP_0.5:0.95',
                     'val/box_loss', 'val/obj_loss', 'val/cls_loss','val/theta_loss',  # val loss
                     'x/lr0', 'x/lr1', 'x/lr2']  # params
+
             for x, tag in zip(list(mloss[:-1]) + list(results) + lr, tags):
                 if tb_writer:
                     tb_writer.add_scalar(tag, x, epoch)  # tensorboard
@@ -428,7 +429,6 @@ def train(hyp, opt, device, tb_writer=None):
                         wandb_logger.log_model(
                             last.parent, opt, epoch, fi, best_model=best_fitness == fi)
                 del ckpt
-
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
     if rank in [-1, 0]:
@@ -454,7 +454,6 @@ def train(hyp, opt, device, tb_writer=None):
                                               save_dir=save_dir,
                                               save_json=True,
                                               plots=False)
-
             # Strip optimizers
             for f in last, best:
                 if f.exists():
@@ -484,6 +483,7 @@ if __name__ == '__main__':
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
     parser.add_argument('--notest', action='store_true', help='only test final epoch')
+    parser.add_argument('--test_frequce', type=int, default=1, help='test map every "test frequce" epoch')
     parser.add_argument('--noautoanchor', action='store_true', help='disable autoanchor check')
     parser.add_argument('--evolve', action='store_true', help='evolve hyperparameters')
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')

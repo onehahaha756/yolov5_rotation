@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=1 python3 detect_big_rotation.py \
---weights runs/train/seaships/seaship38/weights/best.pt  \
+--weights runs/train/ship_direction_sub_train_640_3004/weights/best.pt  \
 --dataset data/seaship_rotation.yaml \
 --project runs/detect/rotation_ship \
 --conf 0.01 \

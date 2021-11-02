@@ -27,7 +27,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 class Detect(nn.Module):
     stride = None  # strides computed during build
     onnx_dynamic = False  # ONNX export parameter

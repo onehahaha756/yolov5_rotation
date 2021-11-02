@@ -39,7 +39,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
            nosave=False,  # do not save images/videos
            project='runs/detect',  # save results to project/name
            name='exp',  # save results to project/name
-           max_det=2000,  # maximum detections per image
+           max_det=1000,  # maximum detections per image
            remote=True, #infer remote big
            device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
            save_pkl=False,  # save results to *.txt
@@ -94,12 +94,16 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
             continue
 
         imgsz=min(max_cropsize,max(H_pad,W_pad))
-        
-        rows=math.ceil((H-overlap)/(imgsz-overlap))
-        cols=math.ceil((W-overlap)/(imgsz-overlap))
+        if imgsz>overlap:
+            rows=math.ceil((H-overlap)/(imgsz-overlap))
+            cols=math.ceil((W-overlap)/(imgsz-overlap))
+        else:
+            rows,cols=1,1
         print(f'{i}/{len(imglist)}  processing {p.name}  shape:{(H,W,C)},imgsz: {imgsz} rows: {rows},cols: {cols} ')
         ori_preds=torch.empty((0,7)).cuda()
+        temp_row_pred=torch.empty((0,7)).cuda()
         for row in range(rows):
+            temp_patch_pred=torch.empty((0,7)).cuda()
             for col in range(cols):
                 x_shift,y_shift=col*imgsz,row*imgsz
                 y_boader,x_boader=min(imgsz,H-y_shift),min(imgsz,W-x_shift)
@@ -126,6 +130,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 pred=pred[0]
                 pred[:,0]+=x_shift
                 pred[:,1]+=y_shift
+                #nms patch results with last patch result               
                 ori_preds=torch.cat((ori_preds,pred),0)
         print(f'end as:{y_shift+y_boader},{x_shift+x_boader},time:{time.time()-ts:.3f}')
         if len(ori_preds)>0:
@@ -136,7 +141,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
             bboxes=torch.cat((bbox_xy,ori_preds[:,2:5]),1)
             scores=ori_preds[:,5]
             #MAX_nms=10
-            #spilt nms,because too many bboxes that result in cuda memory error
+            #spilt nms by class,because too many bboxes that result in cuda memory error
             # import pdb;pdb.set_trace()
             nms_index=nms_rotated(bboxes,scores,iou_thres)
             # import pdb;pdb.set_trace()
@@ -204,8 +209,8 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
     for clss in clssname:
         try:
             rec,prec,ap=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.5,use_07_metric=True)
-            print('{:<20} : {:<20.5}    total pred: {:<20}'.format(clss,ap,len(rec)))
-            save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
+            print('{:<20} : {:<20.5}    total pred: {:<20} max_recall {:<10}'.format(clss,ap,len(rec),rec[-1]))
+            save_file.write('{:<20} : {:<20.5}  total pred: {:<10} max_recall {:<10}\n'.format(clss,ap,len(rec),rec[-1]))
             plt.plot(rec,prec,label=clss)
             save_fig_path=osp.join(det_dir,'{}_AP.png'.format(clss))
             plt.text(0.1,1.0,'nms iou thre:{} conf_thre: {} ap: {:.6f}'.format(iou_thre,conf_thre,ap))
@@ -296,7 +301,7 @@ if __name__ == '__main__':
 
     test_images=dataset['test_images']
     test_labels=dataset['test_labels']
-    test_imagefile=dataset['test_imgfile']
+    #test_imagefile=dataset['test_imgfile']
     clssname=dataset['names']
     # import pdb;pdb.set_trace()
     start_time=time.time()

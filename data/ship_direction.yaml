@@ -1,0 +1,10 @@
+train: /data/03_Datasets/shipdirection/Cutyolo_rotation_640_300  # 
+val: /data/03_Datasets/shipdirection/Cutyolo_rotation_640_300  # 
+# number of classes
+nc: 1
+
+# class names
+names: ['ship']
+test_images: '/data/03_Datasets/shipdirection/pathces_uint8_1000_20211011/dotaformat/images'
+test_labels: '/data/03_Datasets/DOTA-v2.0/val/labelTxt'
+test_imgfile: '/data/03_Datasets/DOTA-v2.0/val/valimgset.txt'

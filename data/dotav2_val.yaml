@@ -1,0 +1,35 @@
+# PASCAL VOC dataset http://host.robots.ox.ac.uk/pascal/VOC/
+# Train command: python train.py --data voc.yaml
+# Default dataset location is next to YOLOv5:
+#   /parent_folder
+#     /VOC
+#     /yolov5
+
+
+# download command/URL (optional)
+# download: bash data/scripts/get_voc.sh
+
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+
+# train: ../cutyoloship/images/train/  # 
+# val: ../cutyoloship/images/val/  # 
+
+train: /data/03_Datasets/dotav2_dotadev/images/train  # 
+val: /data/03_Datasets/dotav2_dotadev/images/val  # 
+# number of classes
+nc: 18
+
+# class names
+names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+               'small-vehicle', 'large-vehicle', 'ship',
+               'tennis-court', 'basketball-court',
+               'storage-tank', 'soccer-ball-field',
+               'roundabout', 'harbor',
+               'swimming-pool', 'helicopter',
+               'container-crane','airport','helipad']
+test_images: '/data/03_Datasets/dotav2_dotadev/images/val'
+test_labels: '/data/03_Datasets/DOTA-v2.0/val/labelTxt'
+test_imgfile: '/data/03_Datasets/DOTA-v2.0/val/valimgset.txt'
+
+# test_images: '/data/03_Datasets/DOTA-v2.0/val/test_eval/images'
+# test_labels: '/data/03_Datasets/DOTA-v2.0/val/test_eval/labelTxt'

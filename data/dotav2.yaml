@@ -29,6 +29,7 @@ names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
                'container-crane','airport','helipad']
 test_images: '/data/03_Datasets/DOTA-v2.0/test-dev/images'
 test_labels: '/data/03_Datasets/DOTA-v2.0/val/labelTxt'
+test_imgfile: ' '
 
 # test_images: '/data/03_Datasets/DOTA-v2.0/val/test_eval/images'
 # test_labels: '/data/03_Datasets/DOTA-v2.0/val/test_eval/labelTxt'

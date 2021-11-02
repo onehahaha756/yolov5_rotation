@@ -588,7 +588,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     Returns:
          list of detections, on (n,6) tensor per image [xyxy, conf, cls]
     """
-
+    import pdb;pdb.set_trace()
     nc = prediction.shape[2] - 5  # number of classes
     xc = prediction[..., 4] > conf_thres  # candidates
 
@@ -676,7 +676,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     return output
 
 def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, multi_label=False,
-                        labels=(), max_det=300):
+                        labels=(), max_det=2000):
     """Runs Non-Maximum Suppression (NMS) on  rotation inference results
     input:
         prediction:[batchsize,nums_pred,[x,y,w,h,r,obj_conf,cls]]
@@ -690,10 +690,9 @@ def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, cl
     # Checks
     assert 0 <= conf_thres <= 1, f'Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0'
     assert 0 <= iou_thres <= 1, f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0'
-
     # Settings
     min_wh, max_wh = 2, 4096  # (pixels) minimum and maximum box width and height
-    max_nms = 1000  # maximum number of boxes into torchvision.ops.nms()
+    max_nms = 5000  # maximum number of boxes into torchvision.ops.nms()
     time_limit = 20.0  # seconds to quit after
     redundant = True  # require redundant detections
     multi_label &= nc > 1  # multiple labels per box (adds 0.5ms/img)
@@ -744,6 +743,7 @@ def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, cl
 
         # Check shape
         n = x.shape[0]  # number of boxes
+        # import pdb;pdb.set_trace()
         if not n:  # no boxes
             continue
         elif n > max_nms:  # excess boxes
