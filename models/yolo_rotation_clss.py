@@ -181,9 +181,9 @@ class Model(nn.Module):
             y.append(x if m.i in self.save else None)  # save output
             # append detect and classify features
             if isinstance(m,Classify):
-               T_patch = x.sigmoid()
+               T_patch = x
                if not self.training:
-                   keep = (T_patch>self.clss_thre).squeeze()
+                   keep = (T_patch.sigmoid()>self.clss_thre).squeeze()
         if profile:
             logger.info('%.1fms total' % sum(dt))
         return T_patch,keep,x
