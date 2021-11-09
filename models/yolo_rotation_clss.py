@@ -80,14 +80,14 @@ class Detect(nn.Module):
         return x if self.training else (torch.cat(z, 1), x)
 
     @staticmethod
-    def _make_grid(nx=20, ny=20):
+    def _make_grid(nx=20, ny=20): 
         yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 
 
 class Model(nn.Module):
     # model, input channels, number of classes
-    def __init__(self, cfg='yolov5s.yaml', ch=3, nc=None, anchors=None):
+    def __init__(self, cfg='yolov5s.yaml', ch=3, nc=None, anchors=None,clss_thre=0.3):
         super(Model, self).__init__()
         if isinstance(cfg, dict):
             self.yaml = cfg  # model dict
@@ -96,7 +96,7 @@ class Model(nn.Module):
             self.yaml_file = Path(cfg).name
             with open(cfg) as f:
                 self.yaml = yaml.safe_load(f)  # model dict
-
+        self.clss_thre = clss_thre
         # Define model
         # import pdb;pdb.set_trace()
         ch = self.yaml['ch'] = self.yaml.get('ch', ch)  # input channels
@@ -121,7 +121,7 @@ class Model(nn.Module):
             m.inplace = self.inplace
 
             m.stride = torch.tensor(
-                [s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))[1]])  # forward
+                [s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))[-1]])  # forward
 
             m.anchors /= m.stride.view(-1, 1, 1)
             check_anchor_order(m)
@@ -158,12 +158,14 @@ class Model(nn.Module):
     def forward_once(self, x, profile=False):
         y, dt = [], []  # outputs
         z = []
-        
+        keep = [True]*x.shape[0]
+        T_patch = []
         for m in self.model:  # end with detect
+            proc_bs = x.shape[0]
             if m.f != -1:  # if not from previous layer
-                x = y[m.f] if isinstance(m.f, int) else [
-                    x if j == -1 else y[j] for j in m.f]  # from earlier layers
-
+                x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
+            #if isinstance(x,list):
+            # #   x = [s if s.shape[0] == proc_bs else s[keep] for s in x]
             if profile:
                 o = thop.profile(m, inputs=(x,), verbose=False)[
                     0] / 1E9 * 2 if thop else 0  # FLOPs
@@ -178,12 +180,13 @@ class Model(nn.Module):
             x = m(x)  # run
             y.append(x if m.i in self.save else None)  # save output
             # append detect and classify features
-            if m.i == 12 or m.i == 27:
-               z.append(x)
-            #    import pdb;pdb.set_trace(e)
+            if isinstance(m,Classify):
+               T_patch = x.sigmoid()
+               if not self.training:
+                   keep = (T_patch>self.clss_thre).squeeze()
         if profile:
             logger.info('%.1fms total' % sum(dt))
-        return z
+        return T_patch,keep,x
     def _descale_pred(self, p, flips, scale, img_size):
         # de-scale predictions following augmented inference (inverse operation)
         if self.inplace:

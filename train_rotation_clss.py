@@ -192,7 +192,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # DP mode
     if cuda and rank == -1 and torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model)
+        model = torch.nn.DataParallel(model,find_unused_parameters=True)
 
     # SyncBatchNorm
     if opt.sync_bn and cuda and rank != -1:
@@ -234,7 +234,7 @@ def train(hyp, opt, device, tb_writer=None):
     if cuda and rank != -1:
         model = DDP(model, device_ids=[opt.local_rank], output_device=opt.local_rank,
                     # nn.MultiheadAttention incompatibility with DDP https://github.com/pytorch/pytorch/issues/26698
-                    find_unused_parameters=any(isinstance(layer, nn.MultiheadAttention) for layer in model.modules()))
+                    find_unused_parameters=True) #any(isinstance(layer, nn.MultiheadAttention) for layer in model.modules()))
 
     # Model parameters
     hyp['box'] *= 3. / nl  # scale to layers
@@ -266,7 +266,6 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Starting training for {epochs} epochs...')
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
-
         # Update image weights (optional)
         if opt.image_weights:
             # Generate indices
@@ -318,9 +317,10 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Forward
             with amp.autocast(enabled=cuda):
-                # try:
-                #import pdb;pdb.set_trace()
-                pred = model(imgs)  # forward
+                try:
+                    pred = model(imgs)  # forward
+                except:
+                    import pdb;pdb.set_trace()
 
                 loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 # import pdb;pdb.set_trace()

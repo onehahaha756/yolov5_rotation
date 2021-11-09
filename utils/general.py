@@ -676,7 +676,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     return output
 
 def non_max_suppression_rotation(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, multi_label=False,
-                        labels=(), max_det=2000):
+                        labels=(), max_det=300):
     """Runs Non-Maximum Suppression (NMS) on  rotation inference results
     input:
         prediction:[batchsize,nums_pred,[x,y,w,h,r,obj_conf,cls]]

@@ -104,7 +104,7 @@ class ComputeLoss_cls:
             pos_weight=torch.tensor([1.0], device=device))
 
         BCEPactchCls = nn.BCEWithLogitsLoss(
-            pos_weight=torch.tensor(1.0, device=device))
+            pos_weight=torch.tensor(5.0, device=device))
         self.theta_lossfn = smooth_theta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         # positive, negative BCE targets
@@ -133,20 +133,21 @@ class ComputeLoss_cls:
         lcls, lbox, ltheta, lobj = torch.zeros(1, device=device), torch.zeros(
             1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         loss_patch_cls = torch.zeros(1,device=device)
-        p = pred[1]
-        pred_patch_cls = pred[0]
+        pred_patch_cls , keep , p = pred
 
         # import pdb;pdb.set_trace()
         tcls, tbox, indices, anchors, t_patch_cls = self.build_targets(
             p, targets)  # targets
-        # import pdb;pdb.set_trace()
+        positive_patch = (t_patch_cls==1).squeeze()
+
         loss_patch_cls = self.BCEPactchCls(pred_patch_cls, t_patch_cls)
-        # import pdb;pdb.set_trace()
+
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
             b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
             tobj = torch.zeros_like(pi[..., 0], device=device)  # target obj
-            # import pdb;pdb.set_trace()
+            obji = torch.zeros(1, device=device)
+            #import pdb;pdb.set_trace()
             n = b.shape[0]  # number of targets
             if n:
                 # prediction subset corresponding to targets
@@ -161,7 +162,7 @@ class ComputeLoss_cls:
                 # iou(prediction, target)
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)
                 lbox += (1.0 - iou).mean()  # iou loss
-                # import pdb;pdb.set_trace()
+                
                 ltheta += self.theta_lossfn(p_theta, tbox[i][:, 4])
                 # Objectness
                 tobj[b, a, gj, gi] = (
@@ -177,7 +178,10 @@ class ComputeLoss_cls:
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
-
+            if positive_patch.sum():
+                obji = self.BCEobj(pi[..., 5][positive_patch], tobj[positive_patch]) 
+            else:
+                obji = 0.*self.BCEobj(pi[..., 5], tobj)
             obji = self.BCEobj(pi[..., 5], tobj)
             lobj += obji * self.balance[i]  # obj loss
             if self.autobalance:
@@ -193,7 +197,7 @@ class ComputeLoss_cls:
         loss_patch_cls *= self.hyp['patch_cls']
         bs = tobj.shape[0]  # batch size
         # import pdb;pdb.set_trace()
-        loss = lbox + lobj + lcls + ltheta
+        loss = loss_patch_cls + lbox + lobj + lcls + ltheta
         # return loss * bs, torch.cat((lbox, lobj, lcls, ltheta, loss)).detach()
         return loss * bs, torch.cat((lbox, lobj, loss_patch_cls.reshape(1), ltheta, loss)).detach()
 

@@ -103,8 +103,9 @@ def test(data,
     confusion_matrix = ConfusionMatrix(nc=nc)
     names = {k: v for k, v in enumerate(model.names if hasattr(model, 'names') else model.module.names)}
     coco91class = coco80_to_coco91_class()
-    s = ('%20s' + '%11s' * 6) % ('Class', 'Images', 'Labels', 'P', 'R', 'mAP@.5', 'mAP@.5:.95')
+    s = ('%20s' + '%11s' * 8) % ('Class', 'Images', 'Labels', 'P', 'R', 'mAP@.5', 'mAP@.5:.95', 'PatchAcc  ','PactchRecall')
     p, r, f1, mp, mr, map50, map, t0, t1, t2 = 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.
+    patch_num,patch_tp,patch_tn,patch_acc , t_patch_nums= 0., 0., 0., 0. ,0
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
 
@@ -119,15 +120,25 @@ def test(data,
         t0 += t - t_
 
         # Run model
-        cls_out,(out, train_out) = model(img, augment=augment)  # inference and training outputs
+        P_patch,keep,(out,train_out) = model(img, augment=augment)  # inference and training outputs
+       
         t1 += time_synchronized() - t
+        # patch class metirc
+        patch_num += nb
+        patch_tcls = torch.zeros(nb,device=targets.device)
         # import pdb;pdb.set_trace()
-        # import pdb;pdb.set_trace()
+        patch_tcls[targets[...,0].long()] = 1
+        patch_tp += (keep*patch_tcls).sum()
+        patch_tn += ((~keep)*(1-patch_tcls)).sum()
+        t_patch_nums += len(set(targets[...,0].tolist()))
         # Compute loss
+        #if batch_i<3:
+        #    print('{} pred: {} \ngt {}'.format(batch_i,P_patch.reshape(1,-1),patch_tcls.reshape(1,-1)))
         if compute_loss:
-            loss += compute_loss((cls_out,train_out), targets)[1][:3]  # box, obj, cls
+            loss += compute_loss((P_patch,keep,train_out), targets)[1][:3]  # box, obj, cls
 
         # Run NMS
+
         # import pdb;pdb.set_trace()
         targets[:, 2:] *= torch.Tensor([width, height, width, height,90.]).to(device)  # to pixels
         lb = [targets[targets[:, 0] == i, 1:] for i in range(nb)] if save_hybrid else []  # for autolabelling
@@ -140,12 +151,10 @@ def test(data,
             labels = targets[targets[:, 0] == si, 1:]
             nl = len(labels)
             tcls = labels[:, 0].tolist() if nl else []  # target class
-            path = Path(paths[si])
             seen += 1
-            # num_labels+=nl
-            gti=np.zeros(nl)
+            #import pdb;pdb.set_trace()
             
-            if len(pred) == 0:
+            if keep[si]==False or len(pred) == 0:
                 if nl:
                     stats.append((torch.zeros(0, niou, dtype=torch.bool), torch.Tensor(), torch.Tensor(), tcls))
                 continue
@@ -196,7 +205,8 @@ def test(data,
         #     f = save_dir / f'test_batch{batch_i}_pred.jpg'  # predictions
         #     Thread(target=plot_images, args=(img, output_to_target(out), paths, f, names), daemon=True).start()
     # import pdb;pdb.set_trace()
-
+    patch_acc = (patch_tn + patch_tp) / patch_num
+    patch_recall = patch_tp / t_patch_nums
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
     # import pdb;pdb.set_trace()
     if len(stats) and stats[0].any():
@@ -208,8 +218,8 @@ def test(data,
         nt = torch.zeros(1)
 
     # Print results
-    pf = '%20s' + '%11i' * 2 + '%11.3g' * 4  # print format
-    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+    pf = '%20s' + '%11i' * 2 + '%11.3g' * 4 + '%11.3g'*2 # print format
+    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map,patch_acc,patch_recall))
 
     # Print results per class
     if (verbose or (nc < 50 and not training)) and nc > 1 and len(stats):
