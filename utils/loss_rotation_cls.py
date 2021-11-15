@@ -196,7 +196,7 @@ class ComputeLoss_cls:
         loss_patch_cls *= self.hyp['patch_cls']
         bs = tobj.shape[0]  # batch size
         # import pdb;pdb.set_trace()
-        loss = 0.1*loss_patch_cls + lbox + lobj + lcls + ltheta
+        loss = loss_patch_cls + lbox + lobj + lcls + ltheta
         # return loss * bs, torch.cat((lbox, lobj, lcls, ltheta, loss)).detach()
         return loss * bs, torch.cat((lbox, lobj, loss_patch_cls.reshape(1), ltheta, loss.reshape(1))).detach()
 
