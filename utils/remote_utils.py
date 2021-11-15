@@ -60,6 +60,7 @@ def draw_clsdet_rotation(img,cls_dets,cls,colors,vis_thresh=0.5):
         # import pdb;pdb.set_trace()
         bbox=cv2.boxPoints(rect).reshape((-1,1,2)).astype(np.int32)
         if score>vis_thresh:
+            # import pdb;pdb.set_trace()
             cv2.polylines(img2,[bbox],True,colors[int(cls_dets[i][-1])],2)
             put_text='{} {:.3f}'.format(label,score)
             cv2.putText(img2,put_text,(int(x-w/2),int(y-h/2)),1,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)

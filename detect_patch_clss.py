@@ -83,7 +83,7 @@ def detect_patch(weights='yolov5s.pt',  # model.pt path(s)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
         ori_img=cv2.imread(imgpath)
         h,w,c=ori_img.shape
-        #import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         img=np.zeros((imgsz,imgsz,3))
         img[0:h,0:w,:]=ori_img
         img=img.transpose(2,0,1)
@@ -95,9 +95,14 @@ def detect_patch(weights='yolov5s.pt',  # model.pt path(s)
             img = img.unsqueeze(0)
         #print('load time: {}s'.format(tload-ts))
         # Inference
-        pred = model(img, augment=augment)[0]
-        # Apply NMS
+        # import pdb;pdb.set_trace()
+        pred_patch_cls , keep , out = model(img, augment=augment)
 
+        # Apply NMS
+        patch_clss_score = pred_patch_cls[0].sigmoid().item()
+        if not keep:
+            continue 
+        pred = out[0]
         #print(f'infer time {tinfer-tload}s')
         pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
@@ -114,6 +119,7 @@ def detect_patch(weights='yolov5s.pt',  # model.pt path(s)
         if save_img:
             show_img=ori_img.copy()
             show_img2=draw_clsdet_rotation(show_img,pred,clssname,colors,0.5) 
+            cv2.putText(show_img2,str(patch_clss_score),(50,50),2,cv2.FONT_HERSHEY_PLAIN,(0,255,0),2)
             save_path = osp.join(vis_dir,'{}.jpg'.format(basename))  
             cv2.imwrite(save_path,show_img2)  
             print(f'{save_path} saved!')
@@ -250,7 +256,7 @@ if __name__ == '__main__':
     classnames=dataset['names']
 
     test_images=dataset['test_images']
-    test_labels=dataset['test_labels']
+    # test_labels=dataset['test_labels']
     # test_imagefile=dataset['test_imgfile']
     clssname=dataset['names']
     # import pdb;pdb.set_trace()

@@ -78,25 +78,27 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
     save_results=[]
     # import pdb;pdb.set_trace()
     for i,imgpath in enumerate(imglist):
+     #try:
         ts=time.time()
         p = Path(imgpath)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
-        # import pdb;pdb.set_trace()
-        try:
-            ori_img=cv2.imread(imgpath)
-            H,W,C=ori_img.shape
-            #H_pad=check_img_size(H,s=stride)
-            #W_pad=check_img_size(W,s=stride)
-        except:
-            print('read image error')
-            continue
-        # imgsz=min(imgsz,max(H_pad,W_pad))
         print('read time {}s\ndetecting...'.format(time.time()-ts))
         ts=time.time()
+        try:
+          ori_img=cv2.imread(imgpath)
+          H,W,C=ori_img.shape
+        except:
+            print('read img error')
+            continue 
         step_h,step_w=(imgsz-overlap),(imgsz-overlap)
         ori_preds=torch.empty((0,7)).cuda()
+        keep_nums = 0
+        unkeep_nums = 0 
+        total_unkeep_time = 0
+        total_keep_time = 0
         for x_shift in range(0,W,step_w):
             for y_shift in range(0,H,step_h):
+                ts1 = time.time()
                 y_boader,x_boader=min(imgsz,H-y_shift),min(imgsz,W-x_shift)
                 img=np.zeros((imgsz,imgsz,3))
                 #print('{}/{}...'.format(x_shift//step_w,W//step_w))
@@ -111,11 +113,25 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 img /= 255.0  # 0 - 255 to 0.0 - 1.0
                 if img.ndimension() == 3:
                     img = img.unsqueeze(0)
-
+                
+                # print('before process {} s'.format(time.time()-ts1))
+                ts1 = time.time()
                 # Inference
-                pred = model(img, augment=augment)[0]
+                pred_patch_cls , keep , out = model(img, augment=augment)
                 # Apply NMS
                 # import pdb;pdb.set_trace()
+               # print(out[0].shape)
+                if not keep:
+                    unkeep_nums += 1
+                    # total_unkeep_time += time.time()-ts1
+                    # import pdb;pdb.set_trace()
+                    # print('unkeep time {}s'.format(time.time()-ts1))
+                    continue
+                # print('keep time {}s'.format(time.time()-ts1))
+                
+                keep_nums +=1 
+                # total_keep_time += time.time()-ts1
+                pred = out[0]
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
                 #1 batch
@@ -123,7 +139,9 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 pred[:,0]+=x_shift
                 pred[:,1]+=y_shift
                 ori_preds=torch.cat((ori_preds,pred),0)
-        print('detect time {}s'.format(time.time()-ts))
+
+        print('detect time {}s,keep/unkeep {}/{}'.format(time.time()-ts,keep_nums,unkeep_nums))
+        # print('keep mean {} unkeep mean {}'.format(total_keep_time/keep_nums,total_unkeep_time/unkeep_nums))
         if len(ori_preds)>0:
             # import pdb;pdb.set_trace()
             #nms by class shift
@@ -195,9 +213,10 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
     # import pdb;pdb.set_trace()
     submit_path=osp.join(det_dir,'submit','Task1_{:s}.txt')
     annot_path=osp.join(annot_dir,'{:s}.txt')
-
+    
     for clss in clssname:
-        try:
+        # try:
+            # import pdb;pdb.set_trace()
             rec,prec,ap=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.5,use_07_metric=True)
             print('{:<20} : {:<20.5}  maxrecall: {:<20.5}  total pred: {:<20}'.format(clss,ap,rec[-1],len(rec)))
             save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
@@ -207,8 +226,8 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
             plt.savefig(save_fig_path)
             plt.clf()
             map+=ap/float(nc)
-        except:
-            save_file.write('{} erro \n'.format(clss))
+        # except:
+        #     save_file.write('{} erro \n'.format(clss))
             
             pass
     print('map : {:<20.5}'.format(map))
@@ -235,6 +254,8 @@ def save_det2dota(det_path):
     # import pdb;pdb.set_trace()
     for imgname in det_dict.keys():
         img_results=det_dict[imgname]
+        #strip imgname suffix to fit annotname 
+        #imgname = imgname.strip('_uint8')
         for result in img_results:
             # import pdb;pdb.set_trace()
             xc, yc, w, h, ag,score,classname=result

@@ -29,7 +29,6 @@ class BCEBlurWithLogitsLoss(nn.Module):
         loss *= alpha_factor
         return loss.mean()
 
-
 class FocalLoss(nn.Module):
     # Wraps focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
     def __init__(self, loss_fcn, gamma=1.5, alpha=0.25):
@@ -39,6 +38,7 @@ class FocalLoss(nn.Module):
         self.alpha = alpha
         self.reduction = loss_fcn.reduction
         self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+
 
     def forward(self, pred, true):
         # import pdb;pdb.set_trace()
@@ -59,7 +59,6 @@ class FocalLoss(nn.Module):
             return loss.sum()
         else:  # 'none'
             return loss
-
 
 class QFocalLoss(nn.Module):
     # Wraps Quality focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
@@ -103,7 +102,7 @@ class ComputeLoss_cls:
         # BCEtheta = nn.BCEWithLogitsLoss(
         #     pos_weight=torch.tensor([1.0], device=device))
 
-        BCEPactchCls = nn.BCEWithLogitsLoss()
+        BCEPactchCls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([5], device=device))
         self.theta_lossfn = smooth_theta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         # positive, negative BCE targets
@@ -113,7 +112,7 @@ class ComputeLoss_cls:
         g = h['fl_gamma']  # focal loss gamma
         if g > 0:
             BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
-
+        BCEPactchCls = FocalLoss(BCEPactchCls,1.5)
         # Detect() module
         det = model.module.model[-1] if is_parallel(model) else model.model[-1]
         self.balance = {3: [4.0, 1.0, 0.4]}.get(
@@ -178,7 +177,8 @@ class ComputeLoss_cls:
                 # with open('targets.txt', 'a') as file:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
             if positive_patch.sum():
-                obji = self.BCEobj(pi[..., 5][positive_patch], tobj[positive_patch]) 
+                # obji = self.BCEobj(pi[..., 5][positive_patch], tobj[positive_patch]) 
+                obji = self.BCEobj(pi[..., 5], tobj) 
             else:
                 obji = 0.*self.BCEobj(pi[..., 5], tobj)
             obji = self.BCEobj(pi[..., 5], tobj)
@@ -196,9 +196,9 @@ class ComputeLoss_cls:
         loss_patch_cls *= self.hyp['patch_cls']
         bs = tobj.shape[0]  # batch size
         # import pdb;pdb.set_trace()
-        loss = loss_patch_cls + lbox + lobj + lcls + ltheta
+        loss = 0.1*loss_patch_cls + lbox + lobj + lcls + ltheta
         # return loss * bs, torch.cat((lbox, lobj, lcls, ltheta, loss)).detach()
-        return loss * bs, torch.cat((lbox, lobj, loss_patch_cls.reshape(1), ltheta, loss)).detach()
+        return loss * bs, torch.cat((lbox, lobj, loss_patch_cls.reshape(1), ltheta, loss.reshape(1))).detach()
 
     def build_targets(self, p, targets):
         # import pdb;pdb.set_trace()

@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-import cv2,glob,os,gdal,pickle
+import glob,os,gdal,pickle
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -20,10 +20,9 @@ from utils.torch_utils import select_device, load_classifier, time_synchronized
 from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet
 from utils.eval_casia import casia_eval
 from utils.loss_rotation import ComputeLoss
-multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
-# multi_img_type=['*PAN.tif']# remote origin image
-#def work_dirs(data_dir):
-
+multi_img_type=['*.jpg','*.png','*warp_uint8.tif','*.tiff']
+# os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2,33).__str__()
+import cv2 
 
 @torch.no_grad()
 def detect(weights='yolov5s.pt',  # model.pt path(s)
@@ -106,7 +105,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
     for i,imgpath in enumerate(imglist):
         # print(f'{i}/{len(imglist)} processing {imgpath}')
         ts=time.time()
-        
+        import pdb;pdb.set_trace()
         basename=os.path.splitext(os.path.basename(imgpath))[0]
         
         ori_img=cv2.imread(imgpath)
@@ -125,9 +124,9 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 img /= 255.0  # 0 - 255 to 0.0 - 1.0
                 if img.ndimension() == 3:
                     img = img.unsqueeze(0)
-
+                import pdb;pdb.set_trace()
                 # Inference
-                pred = model(img, augment=augment)[0]
+                pred_patch_cls , keep , out = model(img, augment=augment)[0]
                 # Apply NMS
                 pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
                 import pdb;pdb.set_trace()
@@ -216,7 +215,7 @@ if __name__ == '__main__':
     print(opt)
     check_requirements(exclude=('tensorboard', 'thop'))
     # import pdb;pdb.set_trace()
-    os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2,32).__str__()
+
     det_path=detect(**vars(opt))
-    imglist=glob.glob(os.path.join(opt.source,'*.jpg'))
+    imglist=glob.glob(os.path.join(opt.source,'*_uint8.tif'))
     eval_remote(opt.annot_dir,'polygon',det_path,imglist,'ship',opt.iou_thres,opt.conf_thres,opt)
