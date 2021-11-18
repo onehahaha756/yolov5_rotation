@@ -8,7 +8,7 @@ python3 detect_big_rotation_clss.py \
 --imgsz 640 \
 --overlap 300 \
 --remote \
---nosave \
+#--nosave \
 #--eval runs/detect/seaship_rotation_clss/exp38/results.pkl \
 #--source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
 #--annot_dir /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt 

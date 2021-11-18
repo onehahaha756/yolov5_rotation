@@ -3,7 +3,7 @@ python3 detect_big_rotationV2.py \
 --weights runs/train/SeashipsV2/yolov5s_seaship_augment_l1_loss-v2-640-300-ratio0_15-5/weights/best.pt  \
 --dataset data/seaship_rotation_origin.yaml \
 --project runs/detect/seaship_rotation_origin \
---conf 0.01 \
+--conf 0.001 \
 --iou 0.5 \
 --imgsz 640 \
 --overlap 300 \
