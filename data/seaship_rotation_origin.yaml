@@ -22,8 +22,8 @@ nc: 1
 # class names
 names: [ 'ship' ]
 
-test_images: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/train'
+test_images: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/test'
 # test_images: '/data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/val/'
 # test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images'
-test_labels: '/data/03_Datasets/CasiaDatasets/seaship_origin/ori_labels/train'
-test_imgfile: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/trainimgset.txt'
+test_labels: '/data/03_Datasets/CasiaDatasets/seaship_origin/ori_labels/test'
+test_imgfile: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/testimgset.txt'

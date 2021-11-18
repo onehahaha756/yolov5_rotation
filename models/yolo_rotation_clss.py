@@ -184,7 +184,9 @@ class Model(nn.Module):
                T_patch = x
                if not self.training:
                    keep = (T_patch.sigmoid()>self.clss_thre).squeeze()
-        #print(m)
+                   if not keep:
+                       break
+        #print(m)  
         if profile:
             logger.info('%.1fms total' % sum(dt))
         return T_patch,keep,x

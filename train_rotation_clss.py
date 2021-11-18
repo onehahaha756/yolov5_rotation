@@ -319,11 +319,8 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Forward
             with amp.autocast(enabled=cuda):
-                try:
-                    pred = model(imgs)  # forward
-                except:
-                    import pdb;pdb.set_trace()
-
+               # try:
+                pred = model(imgs)  # forward
                 loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 # import pdb;pdb.set_trace()
                 if rank != -1:

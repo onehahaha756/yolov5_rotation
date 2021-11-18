@@ -149,7 +149,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
             # import pdb;pdb.set_trace()
             if save_img:
                 import random 
-                colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(clssname))]
+                colors = [(0,0,255)]
                 show_img=ori_img.copy()
                 show_img2=draw_clsdet_rotation(show_img,pred,clssname,colors,conf_thres) 
                 # import pdb;pdb.set_trace()

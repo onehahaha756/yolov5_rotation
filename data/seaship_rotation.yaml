@@ -14,15 +14,17 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/train/  # 
-val: /data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/val/  # 
+train: /data/03_Datasets/CasiaDatasets/Ship/CutSeaship_origin_1024_300/images/train/  # 
+val: /data/03_Datasets/CasiaDatasets/Ship/CutSeaship_origin_1024_300/images/test/  # 
 # number of classes
 nc: 1
 
 # class names
 names: [ 'ship' ]
 
-test_images: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/train'
+# test_images: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/train'
 # test_images: '/data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/val/'
-# test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images'
+test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images'
 test_labels: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt'
+# test_labels: '/data/03_Datasets/CasiaDatasets/seaship_origin/MixShipV3/test_seaship/labelTxt'
+test_imgfile: /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/test_seaship_list.txt

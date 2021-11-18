@@ -6,8 +6,10 @@ python3 detect_big_rotationV2.py \
 --conf 0.01 \
 --iou 0.5 \
 --imgsz 640 \
---overlap 200 \
+--overlap 300 \
 --remote \
+--nosave 
+# --eval runs/detect/seaship_rotation_clss/exp70/results.pkl \
 #--nosave 
 #--eval runs/dotav2/exp69/results.pkl \
 #--source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
