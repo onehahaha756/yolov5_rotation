@@ -17,7 +17,7 @@ from utils.general import non_max_suppression, make_divisible, scale_coords, inc
 from utils.plots import colors, plot_one_box
 from utils.torch_utils import time_synchronized
 
-
+from mmcv import ops
 def autopad(k, p=None):  # kernel, padding
     # Pad to 'same'
     if p is None:
@@ -28,6 +28,32 @@ def autopad(k, p=None):  # kernel, padding
 def DWConv(c1, c2, k=1, s=1, act=True):
     # Depthwise convolution
     return Conv(c1, c2, k, s, g=math.gcd(c1, c2), act=act)
+
+class DCN(nn.Module):
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
+        super(DCN, self).__init__()
+        self.dcn = ops.DeformConv2dPack(c1,c2,k,s, autopad(k, p),groups=g,bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
+
+    def forward(self, x):
+        return self.act(self.bn(self.dcn(x)))
+
+    def fuseforward(self, x):
+        return self.act(self.conv(x))
+
+class DCNV2(nn.Module):
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
+        super(DCNV2, self).__init__()
+        self.dcn = ops.ModulatedDeformConv2dPack(c1,c2,k,s, autopad(k, p),groups=g,bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
+
+    def forward(self, x):
+        return self.act(self.bn(self.dcn(x)))
+
+    def fuseforward(self, x):
+        return self.act(self.conv(x))
 
 
 class Conv(nn.Module):

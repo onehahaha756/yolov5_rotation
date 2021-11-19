@@ -1,8 +1,8 @@
 CUDA_VISIBLE_DEVICES=1 OPENCV_IO_MAX_IMAGE_PIXELS=20000000000 \
 python3 detect_big_rotationV2.py \
---weights runs/train/SeashipsV2/yolov5s_seaship_augment_l1_loss-v2-640-300-ratio0_15-5/weights/best.pt  \
+--weights runs/train/seaship_rotation2/weights/best.pt  \
 --dataset data/seaship_rotation_origin.yaml \
---project runs/detect/seaship_rotation_origin \
+--project runs/detect/seaship_rotation_origin_dcn \
 --conf 0.001 \
 --iou 0.5 \
 --imgsz 640 \
