@@ -14,8 +14,8 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: /data/03_Datasets/CasiaDatasets/Ship/seaship_dotadev_640_300/images/train/  # 
-val: /data/03_Datasets/CasiaDatasets/Ship/seaship_dotadev_640_300/images/val/  # 
+train: /data/03_Datasets/CasiaDatasets/Ship/CutMixShipV3_augment_filter_1129_640_300_0.15/images/train/  # 
+val: /data/03_Datasets/CasiaDatasets/Ship/CutMixShipV3_augment_filter_1129_640_300_0.15/images/val/  # 
 # number of classes
 nc: 1
 
@@ -24,7 +24,7 @@ names: [ 'ship' ]
 
 # test_images: '/data/03_Datasets/CasiaDatasets/seaship_origin/JL/train'
 # test_images: '/data/03_Datasets/CasiaDatasets/Ship/CutyoloMixShipV3_640_rotation_augment_0.15/images/val/'
-test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images'
-test_labels: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt'
+test_images: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3_augment_filter_1129/test/images'
+test_labels: '/data/03_Datasets/CasiaDatasets/Ship/MixShipV3_augment_filter_1129/test/labelTxt'
 # test_labels: '/data/03_Datasets/CasiaDatasets/seaship_origin/MixShipV3/test_seaship/labelTxt'
-test_imgfile: /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/test_seaship_list.txt
+test_imgfile: /data/03_Datasets/CasiaDatasets/Ship/MixShipV3_augment_filter_1129/test.txt

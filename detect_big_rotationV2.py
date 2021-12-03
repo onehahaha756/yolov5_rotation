@@ -23,6 +23,12 @@ from utils.eval_rotation import casia_eval
 from DOTA_devkit.dota_evaluation_task1 import voc_eval
 from detectron2.layers import nms_rotated
 multi_img_type=['*.jpg','*.png','*warp_uint8.tif','*.tiff']
+merge_nms_iou_thr_dict = {
+    'roundabout': 0.1, 'tennis-court': 0.3, 'swimming-pool': 0.1, 'storage-tank': 0.1,
+    'soccer-ball-field': 0.3, 'small-vehicle': 0.05, 'ship': 0.05, 'plane': 0.3,
+    'large-vehicle': 0.05, 'helicopter': 0.2, 'harbor': 0.0001, 'ground-track-field': 0.3,
+    'bridge': 0.0001, 'basketball-court': 0.3, 'baseball-diamond': 0.3
+}
 
 import math
 
@@ -116,6 +122,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
                 # import pdb;pdb.set_trace()
+                
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
                 #1 batch
@@ -131,6 +138,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
             bbox_xy=ori_preds[:,:2]+imgsz*ori_preds[:,-1].reshape(-1,1)
             bboxes=torch.cat((bbox_xy,ori_preds[:,2:5]),1)
             scores=ori_preds[:,5]
+            # import pdb;pdb.set_trace()
             nms_index=nms_rotated(bboxes,scores,iou_thres)
             # import pdb;pdb.set_trace()
             ori_preds=ori_preds[nms_index]
@@ -149,9 +157,12 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
             # import pdb;pdb.set_trace()
             if save_img:
                 import random 
-                colors = [(0,0,255)]
+                if len(clssname) == 1:
+                    colors = [(0,0,255)]
+                else:
+                    colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(clssname))]
                 show_img=ori_img.copy()
-                show_img2=draw_clsdet_rotation(show_img,pred,clssname,colors,conf_thres) 
+                show_img2=draw_clsdet_rotation(show_img,pred,clssname,colors,0.5) 
                 # import pdb;pdb.set_trace()
                 save_path = osp.join(vis_dir,'{}.jpg'.format(basename))  
                 cv2.imwrite(save_path,show_img2)  
@@ -198,7 +209,7 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
 
     for clss in clssname:
         try:
-            rec,prec,ap=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.5,use_07_metric=True)
+            rec,prec,ap=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.3,use_07_metric=True)
             print('{:<20} : {:<20.5}  maxrecall: {:<20.5}  total pred: {:<20}'.format(clss,ap,rec[-1],len(rec)))
             save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
             plt.plot(rec,prec,label=clss)
@@ -286,7 +297,7 @@ if __name__ == '__main__':
     #check_requirements(exclude=('tensorboard', 'thop'))
     import yaml 
     dataconfig=open(opt.dataset,'r',encoding='utf-8')
-    dataset=yaml.load(dataconfig)
+    dataset=yaml.load(dataconfig,Loader=yaml.FullLoader)
     classnames=dataset['names']
 
     test_images=dataset['test_images']

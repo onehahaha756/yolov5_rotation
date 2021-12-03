@@ -102,7 +102,7 @@ class ComputeLoss_cls:
         # BCEtheta = nn.BCEWithLogitsLoss(
         #     pos_weight=torch.tensor([1.0], device=device))
 
-        BCEPactchCls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))
+        BCEPactchCls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([5.0], device=device))
         self.theta_lossfn = smooth_theta
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         # positive, negative BCE targets
@@ -196,7 +196,7 @@ class ComputeLoss_cls:
         loss_patch_cls *= self.hyp['patch_cls']
         bs = tobj.shape[0]  # batch size
         # import pdb;pdb.set_trace()
-        loss = 0*loss_patch_cls + lbox + lobj + lcls + ltheta
+        loss = loss_patch_cls + lbox + lobj + lcls + ltheta
         # return loss * bs, torch.cat((lbox, lobj, lcls, ltheta, loss)).detach()
         return loss * bs, torch.cat((lbox, lobj, loss_patch_cls.reshape(1), ltheta, loss.reshape(1))).detach()
 

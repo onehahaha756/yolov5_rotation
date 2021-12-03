@@ -14,13 +14,16 @@
 # train: ../cutyoloship/images/train/  # 
 # val: ../cutyoloship/images/val/  # 
 
-train: ../cutyolomixship640/images/train/  # 
-val: ../cutyolomixship640/images/val/  # 
+train: /data/03_Datasets/dotav1_ship_dotadev/images/train  # 
+val: /data/03_Datasets/dotav1_ship_dotadev/images/val  # 
 # number of classes
 nc: 1
 
 # class names
-names: [ 'ship' ]
-test_images: '/data/03_Datasets/CasiaDatasets/Ship/seaship_dotadev_640_300/valsplit/images'
-test_labels: ' '
-test_imgfile: /data/03_Datasets/CasiaDatasets/Ship/seaship_dotadev_640_300/valsplit/valsplit_images.txt'
+names: ['ship']
+test_images: '/data/03_Datasets/Dota_ship/val/images'
+test_labels: '/data/03_Datasets/Dota_ship/val/labelTxt'
+test_imgfile: '/data/03_Datasets/Dota_ship/val_images.txt'
+
+# test_images: '/data/03_Datasets/DOTA-v2.0/val/test_eval/images'
+# test_labels: '/data/03_Datasets/DOTA-v2.0/val/test_eval/labelTxt'

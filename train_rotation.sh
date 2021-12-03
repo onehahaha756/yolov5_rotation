@@ -2,8 +2,9 @@ CUDA_VISIBLE_DEVICES=0 python3 train_rotation.py \
 --weights yolov5s.pt \
 --img 640 \
 --workers 4 \
---cfg models/yolov5s_seaship.yaml \
---data data/seaship_rotation.yaml \
+--name hrsc2016_2021_1126 \
+--cfg models/yolov5s_hrsc2016.yaml \
+--data data/hrsc2016.yaml  \
 --hyp data/hyp.scratch.yaml \
 --batch-size 44 \
 --epochs 300 

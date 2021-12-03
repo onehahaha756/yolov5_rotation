@@ -1,12 +1,13 @@
 CUDA_VISIBLE_DEVICES=0,1 python3 -m torch.distributed.launch --nproc_per_node 2  train_rotation_clss.py \
 --weights yolov5s.pt \
---img 1024 \
+--img 640 \
 --workers 16 \
---name seaship_clss_1024_20211116_ \
+--name seaship_clss_20211122 \
 --cfg models/yolov5s_clss.yaml \
 --data data/seaship_rotation.yaml   \
 --hyp data/hyp.scratch.yaml \
---batch-size 32 \
---epochs 300 
+--batch-size 80 \
+--epochs 300 \
+--resume 
 
 # python3 -m torch.distributed.launch --nproc_per_node 2  train_rotation.py

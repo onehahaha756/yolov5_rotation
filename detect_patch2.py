@@ -1,6 +1,6 @@
 import argparse
 import shutil
-import time
+import time,random
 from pathlib import Path
 
 import numpy as np
@@ -20,7 +20,7 @@ from utils.plots import colors, plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
 from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet,draw_clsdet_rotation,rboxes2points
 from utils.eval_rotation import casia_eval
-import gdal 
+# import gdal 
 from detectron2.layers import nms_rotated
 multi_img_type=['*.jpg','*.png','*.tif','*.tiff']
 # multi_img_type=['*PAN.tif']# remote origin image
@@ -91,26 +91,25 @@ def detect_patch(weights='yolov5s.pt',  # model.pt path(s)
         # import pdb;pdb.set_trace()
         ts = time.time()
         basename=os.path.splitext(os.path.basename(path))[0]
-
+        show_img = img.transpose((1,2,0))
         img = torch.from_numpy(img).to(device)
 
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
-        tload=time.time()
-        print('load time: {}s'.format(tload-ts))
+        # tload=time.time()
+        # print('load time: {}s'.format(tload-ts))
         # Inference
         pred = model(img, augment=augment)[0]
         # Apply NMS
         tinfer=time.time()
-        print(f'infer time {tinfer-tload}s')
+        # print(f'infer time {tinfer-tload}s')
         pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
         tnms=time.time()
-        print(f'nms time {tnms-tinfer}s')
+        # print(f'nms time {tnms-tinfer}s')
         pred=pred[0]
         #import pdb;pdb.set_trace()
-
         if save_json:
             img_result=rboxes2points(pred,clssname)
             save_result={}
@@ -118,9 +117,14 @@ def detect_patch(weights='yolov5s.pt',  # model.pt path(s)
             save_result['labels']=img_result
             save_results.append(save_result)            
         if save_img:
-            show_img=img.copy()
-            show_img2=draw_clsdet_rotation(show_img,pred,clssname,conf_thres) 
+            #show_img=img.copy() 
+            if len(clssname) == 1:
+                colors = [(0,0,255)]
+            else:
+                colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(clssname))]
+            show_img2=draw_clsdet_rotation(show_img,pred,clssname,colors,conf_thres) 
             save_path = osp.join(vis_dir,'{}.jpg'.format(basename))  
+            # import pdb;pdb.set_trace()
             cv2.imwrite(save_path,show_img2)  
             print(f'{save_path} saved!')
         pred=[pd[:-1].cpu().numpy().tolist()+[clssname[int(pd[-1])]] for pd in pred]
@@ -198,7 +202,7 @@ if __name__ == '__main__':
 
     import yaml 
     dataconfig=open(opt.dataset,'r',encoding='utf-8')
-    dataset=yaml.load(dataconfig)
+    dataset=yaml.load(dataconfig,Loader=yaml.FullLoader)
     classnames=dataset['names']
 
     test_images=dataset['test_images']

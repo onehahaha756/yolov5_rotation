@@ -1,6 +1,6 @@
 CUDA_VISIBLE_DEVICES=0 OPENCV_IO_MAX_IMAGE_PIXELS=20000000000 \
 python3 detect_big_rotation_clss.py \
---weights runs/train/seaship_clss_20211104139/weights/last.pt  \
+--weights runs/train/seaship_clss_202111222/weights/best.pt  \
 --dataset data/seaship_rotation_origin.yaml \
 --project runs/detect/seaship_rotation_clss \
 --conf 0.001 \
@@ -8,8 +8,9 @@ python3 detect_big_rotation_clss.py \
 --imgsz 640 \
 --overlap 300 \
 --remote \
-#--nosave \
-#--eval runs/detect/seaship_rotation_clss/exp38/results.pkl \
+--nosave 
+#--eval runs/detect/seaship_rotation_clss/exp77/results.pkl \
+# runs/detect/seaship_rotation_clss/exp77
 #--source /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/images \
 #--annot_dir /data/03_Datasets/CasiaDatasets/Ship/MixShipV3/test_seaship/labelTxt 
 #--nosave \
