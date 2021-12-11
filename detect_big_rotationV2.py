@@ -82,17 +82,14 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
         os.mkdir(vis_dir)
     det_results={}
     save_results=[]
-    # import pdb;pdb.set_trace()
     for i,imgpath in enumerate(imglist):
         ts=time.time()
         p = Path(imgpath)
         basename=os.path.splitext(os.path.basename(imgpath))[0]
-        # import pdb;pdb.set_trace()
         try:
             ori_img=cv2.imread(imgpath)
             H,W,C=ori_img.shape
-            #H_pad=check_img_size(H,s=stride)
-            #W_pad=check_img_size(W,s=stride)
+
         except:
             print('read image error')
             continue
@@ -121,7 +118,6 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 # Inference
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
-                # import pdb;pdb.set_trace()
                 
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
@@ -208,8 +204,8 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
     annot_path=osp.join(annot_dir,'{:s}.txt')
 
     for clss in clssname:
-        try:
-            rec,prec,ap=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.3,use_07_metric=True)
+        # try:
+            rec,prec,ap,angle_errors=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.5,use_07_metric=True)
             print('{:<20} : {:<20.5}  maxrecall: {:<20.5}  total pred: {:<20}'.format(clss,ap,rec[-1],len(rec)))
             save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
             plt.plot(rec,prec,label=clss)
@@ -217,22 +213,21 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
             plt.text(0.1,1.0,'nms iou thre:{} conf_thre: {} ap: {:.6f}'.format(iou_thre,conf_thre,ap))
             plt.savefig(save_fig_path)
             plt.clf()
+            plt.figure(2)
+            # import pdb;pdb.set_trace()
+            bins = 1*np.array(range(0,50))
+            plt.hist(angle_errors,bins=bins)
+            plt.savefig(save_fig_path.replace('AP','angle_errors'))
             map+=ap/float(nc)
-        except:
-            save_file.write('{} erro \n'.format(clss))
-            
-            pass
+        # except:
+        #     print('caculate map ERROR')
+        #     save_file.write('{} erro \n'.format(clss)) 
+        #     pass
     print('map : {:<20.5}'.format(map))
     save_file.write('map : {:<20.5}'.format(map))
     
     save_file.close()
    
-   # plt.savefig(save_ap_fig)
-    # with open(results_path,'w',encoding='utf-8') as f:
-    #     f.write('imgsource: {}\nweights: {}\n'.format(opt.source,opt.weights))
-    #     f.write('iou overthre:{}\nConfidence thre:{}\nAP:{}\nMaxRecall:{} \nMinPrecision: {}\n'\
-    #             .format(iou_thre,conf_thre,ap,rec[-1],prec[-1]))
-    # f.close()
 def save_det2dota(det_path):
     dirname=osp.dirname(det_path)
     submit_dir=osp.join(dirname,'submit')
@@ -311,6 +306,6 @@ if __name__ == '__main__':
     else:
         det_path= opt.eval
     save_det2dota(det_path)
-    #imglist=glob.glob(os.path.join(opt.source,'*.jpg'))
+    # imglist=glob.glob(os.path.join(opt.source,'*.jpg'))
     # import pdb;pdb.set_trace()
     eval_remote(test_imagefile,test_labels,'polygon',det_path,clssname,opt.iou_thres,opt.conf_thres,opt)

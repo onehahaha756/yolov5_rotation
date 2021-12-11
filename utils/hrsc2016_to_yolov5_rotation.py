@@ -100,11 +100,11 @@ for imgpath in tqdm.tqdm(ori_imgpaths):
     polygonlist = LongsidePolygon2OpencvRotaion(polygonlist)
     total_instance_num += len(polygonlist)
 
-    # save_imgpath = osp.join(save_imgdir, '{}.jpg'.format(basename))
-    # save_annotpath = osp.join(save_annotdir, '{}.txt'.format(basename))
-    # vis_labelpath = osp.join(vis_labeldir, '{}.jpg'.format(basename))
+    save_imgpath = osp.join(save_imgdir, '{}.jpg'.format(basename))
+    save_annotpath = osp.join(save_annotdir, '{}.txt'.format(basename))
+    vis_labelpath = osp.join(vis_labeldir, '{}.jpg'.format(basename))
 
-    # # cv2.imwrite(save_imgpath, img)
-    # # SaveAnnotTxt(polygonlist, save_annotpath)
-    # # vis_rotation_labels(img, polygonlist, vis_labelpath)
+    cv2.imwrite(save_imgpath, img)
+    SaveAnnotTxt(polygonlist, save_annotpath)
+    vis_rotation_labels(img, polygonlist, vis_labelpath)
 print('total ship nums:',total_instance_num)

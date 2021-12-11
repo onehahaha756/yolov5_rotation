@@ -34,5 +34,3 @@ def rboxes2points(pred,CLASSES,score_thr=0):
         object_dict['confidence']=float(score)
         results_list.append(object_dict)
     return results_list
-
-def save_jsonfile(imgname,save_results)

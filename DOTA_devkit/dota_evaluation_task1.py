@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import polyiou
 from functools import partial
 
+
 def parse_gt(filename):
     """
 
@@ -25,7 +26,7 @@ def parse_gt(filename):
     :return: all instances in a picture
     """
     objects = []
-    with  open(filename, 'r') as f:
+    with open(filename, 'r') as f:
         while True:
             line = f.readline()
             if line:
@@ -51,6 +52,8 @@ def parse_gt(filename):
             else:
                 break
     return objects
+
+
 def voc_ap(rec, prec, use_07_metric=False):
     """ ap = voc_ap(rec, prec, [use_07_metric])
     Compute VOC AP given precision and recall.
@@ -85,11 +88,47 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
+def angle_measure(bb1, bb2):
+    # compute angle error
+    import cv2
+    rbox1 = cv2.minAreaRect(bb1.reshape(-1, 1, 2).astype(np.int32))
+    rbox2 = cv2.minAreaRect(bb2.reshape(-1, 1, 2).astype(np.int32))
+
+    #ag1 = rbox1[-1]
+    (xc1, yc1), (w1, h1), ag1 = rbox1
+    (xc2, yc2), (w2, h2), ag2 = rbox2
+    # ag to (0,90]
+    while not 0 < ag1 <= 90:
+        if ag1 <= 0:
+            ag1 += 90
+            w1, h1 = h1, w1
+        else:
+            ag1 -= 90
+            w1, h1 = h1, w1
+    while not 0 < ag2 <= 90:
+        if ag2 <= 0:
+            ag2 += 90
+            w2, h2 = h2, w2
+        else:
+            ag2 -= 90
+            w2, h2 = h2, w2
+    # ag to (0,180] (longside defination)
+    if w1 < h1:
+        ag1 += 90
+        h1, w1 = w1, h1
+    if w2 < h2:
+        ag2 += 90
+        h2, w2 = w2, h2
+    # return angle error
+
+    return min(abs(ag1 - ag2), 180 - abs(ag1 - ag2))
+
+
 def voc_eval(detpath,
              annopath,
              imagesetfile,
              classname,
-            # cachedir,
+             # cachedir,
              ovthresh=0.5,
              use_07_metric=False):
     """rec, prec, ap = voc_eval(detpath,
@@ -116,31 +155,31 @@ def voc_eval(detpath,
     # cachedir caches the annotations in a pickle file
 
     # first load gt
-    #if not os.path.isdir(cachedir):
-     #   os.mkdir(cachedir)
+    # if not os.path.isdir(cachedir):
+    #   os.mkdir(cachedir)
     #cachefile = os.path.join(cachedir, 'annots.pkl')
     # read list of images
     with open(imagesetfile, 'r') as f:
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
     #print('imagenames: ', imagenames)
-    #if not os.path.isfile(cachefile):
-        # load annots
+    # if not os.path.isfile(cachefile):
+    # load annots
     recs = {}
     for i, imagename in enumerate(imagenames):
         #print('parse_files name: ', annopath.format(imagename))
         recs[imagename] = parse_gt(annopath.format(imagename))
-        #if i % 100 == 0:
-         #   print ('Reading annotation for {:d}/{:d}'.format(
-          #      i + 1, len(imagenames)) )
+        # if i % 100 == 0:
+        #   print ('Reading annotation for {:d}/{:d}'.format(
+        #      i + 1, len(imagenames)) )
         # save
         #print ('Saving cached annotations to {:s}'.format(cachefile))
-        #with open(cachefile, 'w') as f:
-         #   cPickle.dump(recs, f)
-    #else:
+        # with open(cachefile, 'w') as f:
+        #   cPickle.dump(recs, f)
+    # else:
         # load
-        #with open(cachefile, 'r') as f:
-         #   recs = cPickle.load(f)
+        # with open(cachefile, 'r') as f:
+        #   recs = cPickle.load(f)
 
     # extract gt objects for this class
     class_recs = {}
@@ -175,22 +214,24 @@ def voc_eval(detpath,
     #print('check sorted_scores: ', sorted_scores)
     #print('check sorted_ind: ', sorted_ind)
 
-    ## note the usage only in numpy not for list
+    # note the usage only in numpy not for list
     BB = BB[sorted_ind, :]
     image_ids = [image_ids[x] for x in sorted_ind]
     #print('check imge_ids: ', image_ids)
     #print('imge_ids len:', len(image_ids))
+    # import pdb;pdb.set_trace()
     # go down dets and mark TPs and FPs
     nd = len(image_ids)
     tp = np.zeros(nd)
     fp = np.zeros(nd)
+    angle_errors = 90*np.ones(nd)
     for d in range(nd):
         R = class_recs[image_ids[d]]
         bb = BB[d, :].astype(float)
         ovmax = -np.inf
         BBGT = R['bbox'].astype(float)
 
-        ## compute det bb with each BBGT
+        # compute det bb with each BBGT
 
         if BBGT.size > 0:
             # compute overlaps
@@ -198,7 +239,7 @@ def voc_eval(detpath,
 
             # 1. calculate the overlaps between hbbs, if the iou between hbbs are 0, the iou between obbs are 0, too.
             # pdb.set_trace()
-            BBGT_xmin =  np.min(BBGT[:, 0::2], axis=1)
+            BBGT_xmin = np.min(BBGT[:, 0::2], axis=1)
             BBGT_ymin = np.min(BBGT[:, 1::2], axis=1)
             BBGT_xmax = np.max(BBGT[:, 0::2], axis=1)
             BBGT_ymax = np.max(BBGT[:, 1::2], axis=1)
@@ -226,11 +267,13 @@ def voc_eval(detpath,
             BBGT_keep = BBGT[BBGT_keep_mask, :]
             BBGT_keep_index = np.where(overlaps > 0)[0]
             # pdb.set_trace()
+
             def calcoverlaps(BBGT_keep, bb):
                 overlaps = []
                 for index, GT in enumerate(BBGT_keep):
 
-                    overlap = polyiou.iou_poly(polyiou.VectorDouble(BBGT_keep[index]), polyiou.VectorDouble(bb))
+                    overlap = polyiou.iou_poly(polyiou.VectorDouble(
+                        BBGT_keep[index]), polyiou.VectorDouble(bb))
                     overlaps.append(overlap)
                 return overlaps
             if len(BBGT_keep) > 0:
@@ -244,8 +287,12 @@ def voc_eval(detpath,
         if ovmax > ovthresh:
             if not R['difficult'][jmax]:
                 if not R['det'][jmax]:
+                    # import pdb
+                    # pdb.set_trace()
+
                     tp[d] = 1.
                     R['det'][jmax] = 1
+                    angle_errors[d] = angle_measure(bb, BBGT[jmax])
                 else:
                     fp[d] = 1.
         else:
@@ -253,11 +300,11 @@ def voc_eval(detpath,
 
     # compute precision recall
 
-    #print('check fp:', fp)
-    #print('check tp', tp)
-
-
+    # print('check fp:', fp)
+    # print('check tp', tp)
+    # import pdb;pdb.set_trace()
     print('npos num:', npos)
+    mean_ag_eror = angle_errors[angle_errors != 90].sum()/tp.sum()
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
 
@@ -266,8 +313,9 @@ def voc_eval(detpath,
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, use_07_metric)
+    print('mean angle error: ', mean_ag_eror)
+    return rec, prec, ap, angle_errors
 
-    return rec, prec, ap
 
 def main():
 
@@ -278,30 +326,40 @@ def main():
     # classnames = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
     #             'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter']
 
-    detpath = r'/data/02_code_implement/yolov5_rotation/yolov5_rotation/runs/dotav2/exp41/submit/Task1_{:s}.txt'
-    annopath = r'/data/03_Datasets/DOTA-v2.0/val/labelTxt/{:s}.txt'
-    imagesetfile = r'/data/03_Datasets/DOTA-v2.0/val/valimgset.txt'
+    # detpath = r'/data/02_code_implement/yolov5_rotation/yolov5_rotation/runs/dotav2/exp41/submit/Task1_{:s}.txt'
+    # annopath = r'/data/03_Datasets/DOTA-v2.0/val/labelTxt/{:s}.txt'
+    # imagesetfile = r'/data/03_Datasets/DOTA-v2.0/val/valimgset.txt'
+
+    detpath = r'/data/02_code_implement/R3Det/r3det-on-mmdetection/seaship_workdirs/r3det_r50_fpn_2x_20211123/submission4/Task1_{:s}.txt'
+    annopath = r'/data/03_Datasets/CasiaDatasets/Ship/MixShipV3_augment_filter_1129/test/labelTxt/{:s}.txt'
+    imagesetfile = r'/data/03_Datasets/CasiaDatasets/Ship/MixShipV3_augment_filter_1129/test.txt'
 
     # For DOTA-v1.5
     # classnames = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
     #             'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter', 'container-crane']
     # For DOTA-v1.0
-    classnames = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-                'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+    # classnames = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
+    #               'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+    classnames = ['ship']
     classaps = []
     map = 0
     for classname in classnames:
         print('classname:', classname)
-        rec, prec, ap = voc_eval(detpath,
-             annopath,
-             imagesetfile,
-             classname,
-             ovthresh=0.5,
-             use_07_metric=True)
+        rec, prec, ap, angle_errors = voc_eval(detpath,
+                                 annopath,
+                                 imagesetfile,
+                                 classname,
+                                 ovthresh=0.5,
+                                 use_07_metric=True)
         map = map + ap
         #print('rec: ', rec, 'prec: ', prec, 'ap: ', ap)
         print('ap: ', ap)
         classaps.append(ap)
+        plt.figure(2)
+            # import pdb;pdb.set_trace()
+        bins = 1*np.array(range(0,50))
+        plt.hist(angle_errors,bins=bins)
+        plt.savefig(os.path.splitext(detpath)[0]+'_angle_error.png')
 
         # umcomment to show p-r curve of each category
         # plt.figure(figsize=(8,4))
@@ -313,5 +371,7 @@ def main():
     print('map:', map)
     classaps = 100*np.array(classaps)
     print('classaps: ', classaps)
+
+
 if __name__ == '__main__':
     main()
