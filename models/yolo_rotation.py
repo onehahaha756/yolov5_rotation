@@ -58,7 +58,7 @@ class Detect(nn.Module):
                 # import pdb;pdb.set_trace()
                 if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.onnx_dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
-
+                import pdb;pdb.set_trace()
                 y = x[i].sigmoid()
                 if self.inplace:
                     y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy

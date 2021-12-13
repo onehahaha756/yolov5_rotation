@@ -35,6 +35,9 @@ def rboxes2points(pred,CLASSES,score_thr=0):
     for label,bbox,score in zip(labels,bboxes,scores):
         object_dict={}
         xc, yc, w, h, ag = bbox.tolist()
+        if ag > 90:
+            ag -= 90
+            w , h = h , w 
         # import pdb;pdb.set_trace()
         bbox_points=cv2.boxPoints(((xc,yc),(w,h),ag))
         bbox_points=bbox_points.tolist()
@@ -53,6 +56,9 @@ def draw_clsdet_rotation(img,cls_dets,cls,colors,vis_thresh=0.5):
         
         bbox=[float(x) for x in cls_dets[i][:-2]]
         x,y,w,h,theta=bbox
+        if theta > 90:
+            theta -= 90
+            w , h = h , w 
         rect=((x,y),(w,h),theta)
         score=cls_dets[i][-2]
         label=cls_dets[i][-1]

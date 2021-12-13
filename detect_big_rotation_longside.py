@@ -118,7 +118,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 # Inference
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
-                import pdb;pdb.set_trace()
+                
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
                 #1 batch
