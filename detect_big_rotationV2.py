@@ -118,7 +118,7 @@ def detect(weights='yolov5s.pt',  # model.pt path(s)
                 # Inference
                 pred = model(img, augment=augment)[0]
                 # Apply NMS
-                import pdb;pdb.set_trace()
+                # import pdb;pdb.set_trace()
                 pred = non_max_suppression_rotation(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
                 #1 batch
@@ -205,7 +205,7 @@ def eval_remote(test_imagefile,annot_dir,annot_type,det_path,clssname,iou_thre,c
 
     for clss in clssname:
         # try:
-            rec,prec,ap,angle_errors=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.5,use_07_metric=True)
+            rec,prec,ap,angle_errors=voc_eval(submit_path,annot_path,test_imagefile, clss,ovthresh=0.1,use_07_metric=True)
             print('{:<20} : {:<20.5}  maxrecall: {:<20.5}  total pred: {:<20}'.format(clss,ap,rec[-1],len(rec)))
             save_file.write('{:<20} : {:<20.5}  total pred: {:<10}\n'.format(clss,ap,len(rec)))
             plt.plot(rec,prec,label=clss)

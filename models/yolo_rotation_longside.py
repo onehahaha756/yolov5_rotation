@@ -47,7 +47,6 @@ class Detect(nn.Module):
 
     def forward(self, x):
         # x = x.copy()  # for profiling
-  
         z = []  # inference output
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv
@@ -58,18 +57,16 @@ class Detect(nn.Module):
                 # import pdb;pdb.set_trace()
                 if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.onnx_dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
-                # import pdb;pdb.set_trace()
-                y = x[i]#.sigmoid()
+
+                y = x[i]
                 if self.inplace:
-                    y[..., 0:2] = (y[..., 0:2] .sigmoid() * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                    y[..., 0:2] = (y[..., 0:2].sigmoid() * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
                     y[..., 2:4] = (y[..., 2:4].sigmoid() * 2) ** 2 * self.anchor_grid[i]  # wh
-                    y[...,4]=y[...,4] * 180 / math.pi      #theta
-                    y[...,5:] = y[...,5:].sigmoid()
+                    y[...,4]=y[...,4] * 180 / math.pi     #theta
                 else:  # for YOLOv5 on AWS Inferentia https://github.com/ultralytics/yolov5/pull/2953
                     xy = (y[..., 0:2].sigmoid() * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
                     wh = (y[..., 2:4].sigmoid() * 2) ** 2 * self.anchor_grid[i].view(1, self.na, 1, 1, 2)  # wh
-                    theta=y[...,4] * 180 / math.pi         #theta
-                    y[...,5:] = y[...,5:].sigmoid()
+                    theta=y[...,4] * 180 / math.pi          #theta
                     y = torch.cat((xy, wh, theta,y[..., 5:]), -1)
                 z.append(y.view(bs, -1, self.no))
         # import pdb;pdb.set_trace()

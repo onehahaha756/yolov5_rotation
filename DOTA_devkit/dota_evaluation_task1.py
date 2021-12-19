@@ -349,7 +349,7 @@ def main():
                                  annopath,
                                  imagesetfile,
                                  classname,
-                                 ovthresh=0.5,
+                                 ovthresh=0.1,
                                  use_07_metric=True)
         map = map + ap
         #print('rec: ', rec, 'prec: ', prec, 'ap: ', ap)

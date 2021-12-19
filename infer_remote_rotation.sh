@@ -1,14 +1,14 @@
 CUDA_VISIBLE_DEVICES=1 OPENCV_IO_MAX_IMAGE_PIXELS=20000000000 \
 python3 detect_big_rotationV2.py \
---weights runs/train/seaship_yolov5l_longside/weights/best.pt  \
---dataset data/seaship_rotation_filter.yaml \
---project runs/detect/seaship_rotation_filter \
---conf 0.0001 \
+--weights runs/train/seaship_rotation_dotadev_0/weights/best.pt  \
+--dataset data/seaship_rotation.yaml \
+--project runs/detect/seaship_rotation \
+--conf 0.01 \
 --iou 0.1 \
 --imgsz 640 \
 --overlap 200 \
 --remote \
-#--nosave \
+--nosave \
 #--eval runs/detect/seaship_rotation_filter/exp12/results.pkl 
 #--eval  runs/detect/dotav1_ship/exp2/results.pkl \
 #--nosave 
