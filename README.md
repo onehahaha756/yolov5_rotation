@@ -85,7 +85,7 @@ dotav2数据集
 ### 代码目前常见的问题说明
 - dota转yolov5 rotation 代码说明 
 
-   cut2rotation.py 代码的旋转框定义方式，x轴顺时针旋转，默认第一条边为w，另外一条边为h。代码转换在图片尺寸长宽不一致的情况下，会转换出错。可参考latest分支中data/hrsc2016_2_rotation.py进行新的标签转换方式，另外相应的dataset_rotation.py，utils/plots.py等也需要修改。latest分支中已经改过了。
+   cut2rotation.py 代码的旋转框定义方式，x轴顺时针旋转，默认第一条边为w，另外一条边为h。代码转换在图片尺寸长宽不一致的情况下，会转换出错。可参考latest分支中utils/hrsc2016_2_rotation.py进行新的标签转换方式，另外相应的dataset_rotation.py，utils/plots.py等也需要修改。latest分支中已经改过了。
    关于opencv定义旋转框的方式，x轴顺时针旋转第一条边为w，另一条边为h，角度为（0，90]。部分版本中，逆时针旋转第一条边为h,另一条边为w，角度为[-90，0），其实定义方式是一致的，区别在于差90°。在代码里做相应的调整即可。
 - 模型性能
 
