@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 from PIL import Image
 
-from dota2rotation import *
+#from dota2rotation import *
 multil_type=['*.jpg','*.png','*.tif']
 dataset_annotname=['ship']
 dataset_annotname=['A','B','C','D','E','F','G','H','I','J','K']
