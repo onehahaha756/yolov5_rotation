@@ -79,8 +79,9 @@ dotav2数据集
 - master分支: 修改如上所述，模型方面修改了Detect模块，角度回归方式采用smoothl1
 - dcn-yolov5-rotation:引入DCN，尝试适应多尺度问题，开发中
 - develop:修改loss函数，参考：scrdet
-- latest : 做了一些改进，其中重要的部分包括 
-  1）添加了DOTA_devkit（需要参考工具安装说明安装)，运行infer_remote_rotation.sh 脚本，可以直接输出模型检测精度
+- latest : 做了一些改进，其中重要的部分包括 \
+  1）添加了DOTA_devkit（需要参考工具安装说明安装) \
+  2）运行infer_remote_rotation.sh 脚本，可以直接在大图上预测，并输出结果，且可以评估模型检测精度 \
 ### 代码说明
 该代码是由于自己的课题需要修改的，主要用于学习交流。同时我也还在学习和开发中，因此代码可能并没有很好的整理，如果大家对这份代码感兴趣或者有使用问题欢迎大家跟我交流~
 
