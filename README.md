@@ -27,7 +27,7 @@
    Nms在测试的时候进行重叠框过滤，旋转框iou计算，调用detectron2的函数
    detectron2 : https://github.com/facebookresearch/detectron2/tree/66d658de02a2579d9516a72d94e98a394e2f0ccf/detectron2
 6. 评价代码修改
-   制作数据集时，将4096图像切成了640尺寸大小，测试时采用自己编写的代码，之前写的是针对矩形框的，需要针对旋转框修改下nms和评价的代码（to do）
+   参考latest分支detect_big_rotationV2.py，实现了大图预测以及评估大图的精度
 ### 从头开始训练及测试流程（代码使用说明)
 1. dota标注数据集格式转yolov5 rotation标注格式
 - 脚本 utils/cut2rotation.sh ，修改数据集路径和滑窗切片大小及重叠面积即可
@@ -93,9 +93,9 @@ dotav2数据集
 - 模型性能
 
   做了dota数据集的实验，FPN默认3个stage,即下采样（8，16，32），未使用多尺度训练和测试，单用训练集训练，最终结果dota1 mAP约60,性能不是很好，以下可供参考：
-  yolov5l_rotation：
-  mAP: 0.6008265883151498
-  ap of each class: plane:0.8764534796039967, baseball-diamond:0.5904322702703031, bridge:0.49038861352180907, ground-track-field:0.48863373753994466, small-   vehicle:0.7766348619928898, large-vehicle:0.7069625557468652, ship:0.8429322193652917, tennis-court:0.8672936947004829, basketball-court:0.7419463367516996, storage-tank:0.8493569084547188, soccer-ball-field:0.35651165726395767, roundabout:0.53453295511373, harbor:0.6331742403609525, swimming-pool:0.03336907026438091, helicopter:0.22377622377622378
+  yolov5l_rotation：\
+  mAP: 0.6008265883151498\
+  ap of each class: plane:0.8764534796039967, baseball-diamond:0.5904322702703031, bridge:0.49038861352180907, ground-track-field:0.48863373753994466, small-   vehicle:0.7766348619928898, large-vehicle:0.7069625557468652, ship:0.8429322193652917, tennis-court:0.8672936947004829, basketball-court:0.7419463367516996, storage-tank:0.8493569084547188, soccer-ball-field:0.35651165726395767, roundabout:0.53453295511373, harbor:0.6331742403609525, swimming-pool:0.03336907026438091, helicopter:0.22377622377622378\
   在hrsc2016上用训练集和验证集训练，测试集测试，AP约89.3，性能尚可
 - 其他
 
