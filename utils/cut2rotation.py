@@ -47,10 +47,18 @@ def polygons2rotation(polygon_list):
     for polygon in polygon_list:
         class_name,points = polygon
         rect_array = np.array(points).reshape((-1, 2))
-        # import pdb;pdb.set_trace()
-        rotation_parm = cv2.minAreaRect(rect_array)
-        # x,y,w,h,theta=rotation
-        rotation_list.append((class_name,rotation_parm))
+        rbbox = cv2.minAreaRect(rect_array)
+        x, y, w, h, a = rbbox[0][0], rbbox[0][1], rbbox[1][0], rbbox[1][1], rbbox[2]
+        #some case angle is not in (0,90]
+        while not 0 < a <= 90:
+            if a <= 0:
+                a += 90
+                w, h = h, w
+            else:
+                a -= 90
+                w, h = h, w
+        rotation_list.append((class_name,(x,y,w,h,a)))
+        
     return rotation_list
 
 def rotation2scale(rotation_list,imgsize=640,theta_max=90):
